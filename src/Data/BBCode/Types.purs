@@ -7,6 +7,7 @@ module Data.BBCode.Types (
   BBList (..),
   BBTable (..),
   BBColor (..),
+  BBSpacing (..),
   ImageSize (..),
   QuoteAuthor,
   LinkURL,
@@ -28,8 +29,9 @@ type BBDocument = List BBDoc
 
 
 data BBDoc
-  = BBDocText  BBText
-  | BBDocMedia BBMedia
+  = Text    BBText
+  | Media   BBMedia
+  | Spacing BBSpacing
 
 
 
@@ -87,6 +89,12 @@ data BBColor
   = Red
   | White
   | Blue
+
+
+
+data BBSpacing
+  = NL
+  | HR
 
 
 

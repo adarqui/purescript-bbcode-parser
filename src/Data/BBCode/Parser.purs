@@ -39,16 +39,18 @@ import Data.BBCode.Types
 open :: forall m a. (Monad m) => ParserT String m Token
 open = do
   string "["
+  c <- letter
   r <- many1Till anyChar (string "]")
-  return $ BBOpen (fromCharList r)
+  return $ BBOpen (fromCharList $ c : r)
 
 
 
 closed :: forall m a. (Monad m) => ParserT String m Token
 closed = do
   string "[/"
+  c <- letter
   r <- many1Till anyChar (string "]")
-  return $ BBClosed (fromCharList r)
+  return $ BBClosed (fromCharList $ c : r)
 
 
 

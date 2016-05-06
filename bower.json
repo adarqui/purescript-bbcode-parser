@@ -14,6 +14,10 @@
     "purescript-console": "^0.1.0",
     "purescript-parsing": "^0.8.0",
     "purescript-test-unit": "^6.0.0",
-    "purescript-assert": "^0.1.1"
+    "purescript-assert": "^0.1.1",
+    "purescript-elm-compat": "^1.0.0"
+  },
+  "resolutions": {
+    "purescript-sequences": "^0.6.0"
   }
 }

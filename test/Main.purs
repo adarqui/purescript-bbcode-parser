@@ -25,28 +25,28 @@ main = runTest do
 
   test "Token Parser Tests" do
 
-    Assert.equal (Right $ Cons (BBStr "hello") Nil)  $ parseTokens "hello" tokens
-    Assert.equal (Right $ Cons (BBStr "[") Nil)      $ parseTokens "[" tokens
-    Assert.equal (Right $ Cons (BBStr "]") Nil)      $ parseTokens "]" tokens
-    Assert.equal (Right $ Cons (BBStr "[ b ]") Nil)  $ parseTokens "[ b ]" tokens
-    Assert.equal (Right $ Cons (BBStr "[/ b ]") Nil) $ parseTokens "[/ b ]" tokens
+    Assert.equal (Right $ Cons (BBStr "hello") Nil)  $ parseTokens' "hello"
+    Assert.equal (Right $ Cons (BBStr "[") Nil)      $ parseTokens' "["
+    Assert.equal (Right $ Cons (BBStr "]") Nil)      $ parseTokens' "]"
+    Assert.equal (Right $ Cons (BBStr "[ b ]") Nil)  $ parseTokens' "[ b ]"
+    Assert.equal (Right $ Cons (BBStr "[/ b ]") Nil) $ parseTokens' "[/ b ]"
 
     Assert.equal
       (Right $ Cons (BBOpen "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
-      $ parseTokens "[b]hello[/b]" tokens
+      $ parseTokens' "[b]hello[/b]"
 
     Assert.equal
       (Right "open(b),open(u),str(hello),closed(u),closed(b)")
-      $ flattenTokens <$> (parseTokens "[b][u]hello[/u][/b]" tokens)
+      $ flattenTokens <$> parseTokens' "[b][u]hello[/u][/b]"
 
     Assert.equal
       (Right "open(b),open(u),closed(u),closed(b)")
-      $ flattenTokens <$> (parseTokens "[b][u][/u][/b]" tokens)
+      $ flattenTokens <$> parseTokens' "[b][u][/u][/b]"
 
     Assert.equal
       (Right "open(b),open(u),closed(u)")
-      $ flattenTokens <$> (parseTokens "[b][u][/u]" tokens)
+      $ flattenTokens <$> parseTokens' "[b][u][/u]"
 
     Assert.equal
       (Right "open(b),str(a),open(u),str(b),closed(u),str(c)")
-      $ flattenTokens <$> (parseTokens "[b]a[u]b[/u]c" tokens)
+      $ flattenTokens <$> parseTokens' "[b]a[u]b[/u]c"

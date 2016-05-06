@@ -1,4 +1,5 @@
 module Data.BBCode.Types (
+  Token (..),
   BBDocument,
   BBDoc (..),
   BBText (..),
@@ -21,6 +22,25 @@ module Data.BBCode.Types (
 
 import Data.List  (List)
 import Data.Maybe (Maybe)
+import Prelude    (class Show, class Eq, (<>), (==))
+
+
+
+data Token
+  = BBOpen   String
+  | BBClosed String
+  | BBStr    String
+
+instance tokenShow :: Show Token where
+  show (BBOpen s)   = "open("<>s<>")"
+  show (BBClosed s) = "closed("<>s<>")"
+  show (BBStr s)    = "str("<>s<>")"
+
+instance tokenEq :: Eq Token where
+  eq (BBOpen s1)   (BBOpen s2)   = s1 == s2
+  eq (BBClosed s1) (BBClosed s2) = s1 == s2
+  eq (BBStr s1)    (BBStr s2)    = s1 == s2
+  eq _             _             = false
 
 
 

@@ -38,3 +38,15 @@ main = runTest do
     Assert.equal
       (Right "open(b),open(u),str(hello),closed(u),closed(b)")
       $ flattenTokens <$> (parseTokens "[b][u]hello[/u][/b]" tokens)
+
+    Assert.equal
+      (Right "open(b),open(u),closed(u),closed(b)")
+      $ flattenTokens <$> (parseTokens "[b][u][/u][/b]" tokens)
+
+    Assert.equal
+      (Right "open(b),open(u),closed(u)")
+      $ flattenTokens <$> (parseTokens "[b][u][/u]" tokens)
+
+    Assert.equal
+      (Right "open(b),str(a),open(u),str(b),closed(u),str(c)")
+      $ flattenTokens <$> (parseTokens "[b]a[u]b[/u]c" tokens)

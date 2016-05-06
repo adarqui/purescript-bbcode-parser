@@ -4,7 +4,11 @@ module Data.BBCode.Parser (
   str,
   token,
   tokens,
-  parseTokens
+  parseTokens,
+  parseTokens',
+  parseBBCodeFromTokens,
+  parseBBCode,
+  parseBBCode'
 ) where
 
 
@@ -93,8 +97,28 @@ fromCharList = foldMap fromChar
 
 
 
-parseTokens :: forall s a. s -> Parser s a -> Either String a
+parseTokens :: forall s. s -> Parser s (List Token) -> Either String (List Token)
 parseTokens input p =
   case runParser input p of
     Left err     -> Left $ show err
     Right actual -> Right actual
+
+
+
+parseTokens' :: String -> Either String (List Token)
+parseTokens' s = parseTokens s tokens
+
+
+
+parseBBCodeFromTokens :: forall a. List Token -> Either String a
+parseBBCodeFromTokens _ = Left "error"
+
+
+
+parseBBCode :: forall s a. s -> Parser s a -> Either String a
+parseBBCode _ _ = Left "error"
+
+
+
+parseBBCode' :: String -> Either String (List BBDoc)
+parseBBCode' _ = Left "error"

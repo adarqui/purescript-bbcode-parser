@@ -62,14 +62,14 @@ data BBDoc
 
 
 data BBText
-  = Bold      BBText
-  | Italic    BBText
-  | Underline BBText
-  | Strike    BBText
-  | Size      BBSize  BBText
-  | Color     BBColor BBText
-  | Center    BBText
-  | Quote     (Maybe QuoteAuthor) BBText
+  = Bold      (List BBText)
+  | Italic    (List BBText)
+  | Underline (List BBText)
+  | Strike    (List BBText)
+  | Size      BBSize  (List BBText)
+  | Color     BBColor (List BBText)
+  | Center    (List BBText)
+  | Quote     (Maybe QuoteAuthor) (List BBText)
   | Link      (Maybe LinkName) LinkURL
   | List      BBList
   | OrdList   BBList

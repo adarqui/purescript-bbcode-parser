@@ -1,5 +1,6 @@
 module Data.BBCode.Types (
   Token (..),
+  flattenTokens,
   BBDocument,
   BBDoc (..),
   BBText (..),
@@ -20,9 +21,11 @@ module Data.BBCode.Types (
 
 
 
-import Data.List  (List)
-import Data.Maybe (Maybe)
-import Prelude    (class Show, class Eq, (<>), (==))
+import Data.Foldable (foldl)
+import Data.List     (List)
+import Data.Maybe    (Maybe)
+import Elm.List      (intersperse)
+import Prelude       (class Show, show, class Eq, map, (<>), (==), (<<<))
 
 
 
@@ -41,6 +44,9 @@ instance tokenEq :: Eq Token where
   eq (BBClosed s1) (BBClosed s2) = s1 == s2
   eq (BBStr s1)    (BBStr s2)    = s1 == s2
   eq _             _             = false
+
+flattenTokens :: List Token -> String
+flattenTokens = foldl (<>) "" <<< intersperse "," <<< map show
 
 
 

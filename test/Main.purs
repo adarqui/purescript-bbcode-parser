@@ -22,3 +22,7 @@ main = runTest do
     Assert.equal (Right $ Cons (BBStr "]") Nil)      $ parseTokens "]" tokens
     Assert.equal (Right $ Cons (BBStr "[ b ]") Nil)  $ parseTokens "[ b ]" tokens
     Assert.equal (Right $ Cons (BBStr "[/ b ]") Nil) $ parseTokens "[/ b ]" tokens
+
+    Assert.equal
+      (Right $ Cons (BBOpen "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
+      $ parseTokens "[b]hello[/b]" tokens

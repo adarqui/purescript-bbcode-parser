@@ -40,7 +40,7 @@ open :: forall m a. (Monad m) => ParserT String m Token
 open = do
   string "["
   c <- letter
-  r <- many1Till anyChar (string "]")
+  r <- manyTill anyChar (string "]")
   return $ BBOpen (fromCharList $ c : r)
 
 
@@ -49,7 +49,7 @@ closed :: forall m a. (Monad m) => ParserT String m Token
 closed = do
   string "[/"
   c <- letter
-  r <- many1Till anyChar (string "]")
+  r <- manyTill anyChar (string "]")
   return $ BBClosed (fromCharList $ c : r)
 
 

@@ -24,6 +24,7 @@ module Data.BBCode.Types (
 import Data.Foldable (foldl)
 import Data.List     (List)
 import Data.Maybe    (Maybe)
+import Data.String   (toLower)
 import Elm.List      (intersperse)
 import Prelude       (class Show, show, class Eq, map, (<>), (==), (<<<), (&&))
 
@@ -35,8 +36,8 @@ data Token
   | BBStr    String
 
 instance tokenShow :: Show Token where
-  show (BBOpen s)   = "open("<>s<>")"
-  show (BBClosed s) = "closed("<>s<>")"
+  show (BBOpen s)   = "open("<>toLower s<>")"
+  show (BBClosed s) = "closed("<>toLower s<>")"
   show (BBStr s)    = "str("<>s<>")"
 
 instance tokenEq :: Eq Token where
@@ -58,16 +59,19 @@ data BBDoc
   = DocText    BBText
   | DocMedia   BBMedia
   | DocSpacing BBSpacing
+  | DocNone
 
 instance bbdocShow :: Show BBDoc where
   show (DocText t)    = "DocText("<>show t<>")"
   show (DocMedia _)   = "DocMedia"
   show (DocSpacing _) = "DocSpacing"
+  show DocNone        = "DocNone"
 
 instance bbdocEq :: Eq BBDoc where
   eq (DocText t1)    (DocText t2)    = t1 == t2
   eq (DocMedia t1)   (DocMedia t2)   = t1 == t2
   eq (DocSpacing t1) (DocSpacing t2) = t1 == t2
+  eq DocNone         DocNone         = true
   eq _                _              = false
 
 
@@ -89,20 +93,20 @@ data BBText
   | Text      String
 
 instance bbtextShow :: Show BBText where
-  show (Bold _) = "Bold"
-  show (Italic _) = "Italic"
-  show (Underline _) = "Underline"
-  show (Strike _) = "Strike"
-  show (Size _ _) = "Size"
-  show (Color _ _) = "Color"
-  show (Center _) = "Center"
-  show (Quote _ _) = "Quote"
-  show (Link _ _) = "Link"
-  show (List _) = "List"
-  show (OrdList _) = "OrdList"
-  show (Table _) = "Table"
-  show (Code _) = "Code"
-  show (Text t) = "Text("<>t<>")"
+  show (Bold t)      = "Bold("<>show t<>")"
+  show (Italic t)    = "Italic("<>show t<>")"
+  show (Underline t) = "Underline("<>show t<>")"
+  show (Strike t)    = "Strike("<>show t<>")"
+  show (Size _ t)    = "Size("<>show t<>")"
+  show (Color _ t)   = "Color("<>show t<>")"
+  show (Center _)    = "Center"
+  show (Quote _ _)   = "Quote"
+  show (Link _ _)    = "Link"
+  show (List _)      = "List"
+  show (OrdList _)   = "OrdList"
+  show (Table _)     = "Table"
+  show (Code t)      = "Code("<>show t<>")"
+  show (Text t)      = "Text("<>t<>")"
 
 instance bbtextEq :: Eq BBText where
   eq (Bold t1)      (Bold t2)      = t1 == t2

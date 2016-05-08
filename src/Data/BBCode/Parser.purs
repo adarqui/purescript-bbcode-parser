@@ -4,6 +4,8 @@ module Data.BBCode.Parser (
   str,
   token,
   tokens,
+  concatTokens,
+  concatBBStr,
   parseTokens,
   parseTokens',
   parseBBCodeFromTokens,
@@ -24,8 +26,11 @@ import Data.Functor
 import Data.List hiding (many)
 import Data.List as L
 import Data.Array (many)
+import Data.Map as M
 import Data.Maybe
 import Data.String hiding (uncons)
+import Data.Tuple
+import Elm.List as ElmL
 import Prelude -- (Monad, Functor, bind, return, (<$>), (+))
 import Test.Assert
 import Text.Parsing.Parser
@@ -45,7 +50,7 @@ open = do
   string "["
   c <- letter
   r <- manyTill anyChar (string "]")
-  return $ BBOpen (fromCharList $ c : r)
+  return $ BBOpen (fromCharListToLower $ c : r)
 
 
 
@@ -54,7 +59,7 @@ closed = do
   string "[/"
   c <- letter
   r <- manyTill anyChar (string "]")
-  return $ BBClosed (fromCharList $ c : r)
+  return $ BBClosed (fromCharListToLower $ c : r)
 
 
 
@@ -97,11 +102,48 @@ fromCharList = foldMap fromChar
 
 
 
+fromCharListToLower :: forall f. Foldable f => f Char -> String
+fromCharListToLower = toLower <<< fromCharList
+
+
+
 {-
 parseTag :: String -> BBDoc
 parseTag "b" = DocText <<< Bold
 parseTag _   = DocText <<< Text
 -}
+
+
+
+-- | concat consecutive BBStr's
+--
+concatTokens :: List Token -> List Token
+concatTokens = go Nil
+  where
+  go accum xs =
+    case uncons xs of
+      Nothing             -> reverse accum
+      Just { head, tail } ->
+        let
+          heads = L.takeWhile isBBStr tail
+          tails = L.dropWhile isBBStr tail
+        in
+          if isBBStr head
+                         then go ((concatBBStr $ head : heads) : accum) tails
+                         else go (head : accum) tail
+
+
+
+-- | Once we have a list of BBStr's, turn them into one BBStr
+--
+concatBBStr :: List Token -> Token
+concatBBStr = BBStr <$> Elm.String.concat <<< map (\(BBStr s) -> s) <<< filter isBBStr
+
+
+
+isBBStr :: Token -> Boolean
+isBBStr (BBStr _) = true
+isBBStr _         = false
 
 
 
@@ -118,17 +160,74 @@ parseTokens' s = parseTokens s tokens
 
 
 
+{-
+runBBCode :: String -> List Token -> Tuple BBDoc (List Token)
+runBBCode tag xs =
+  case tag of
+      "b" -> Tuple (DocText $ Bold (Cons (Text "hello") Nil)) Nil
+      _   -> Tuple (DocText $ Text "str") xs
+      -}
+
+{-
+runBBCode "b" xs = Tuple (DocText $ Bold (Cons (Text "hello") Nil)) Nil
+runBBCode "u" xs = Tuple (DocText $ Underline (Cons (Text "hello") Nil)) Nil
+runBBCode _   xs = Tuple (DocText $ Text "str") xs
+-}
+
+
+
+runBBCode :: String -> Maybe BBDoc -> M.Map String (Maybe BBDoc -> Either String BBDoc) -> Either String BBDoc
+runBBCode _ Nothing _ = Right DocNone
+runBBCode s doc bmap  =
+  case M.lookup s bmap of
+       Nothing -> Left $ s <> " not found"
+       Just v  -> v doc
+
+
+
+runBold :: Maybe BBDoc -> Either String BBDoc
+runBold Nothing            = Right $ DocText $ Bold Nil
+runBold (Just (DocText t)) = Right $ DocText $ Bold $ L.singleton t
+runBold _                  = Left "bold error"
+
+runHR :: Maybe BBDoc -> Either String BBDoc
+runHR Nothing = Right $ DocSpacing HR
+runHR _       = Left "hr error"
+
+
+
+defaultBBCodeMap :: M.Map String (Maybe BBDoc -> Either String BBDoc)
+defaultBBCodeMap =
+  M.fromFoldable [
+    Tuple "b" runBold
+  ]
+
+
+
 parseBBCodeFromTokens :: List Token -> Either String BBDocument
-parseBBCodeFromTokens toks = go Nil toks
+parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap
+
+
+
+parseBBCodeFromTokens' :: M.Map String (Maybe BBDoc -> Either String BBDoc) -> List Token -> Either String BBDocument
+parseBBCodeFromTokens' bmap toks = go Nil Nothing Nil toks
   where
-  go accum toks' =
+  go accum saccum stack toks' =
     case uncons toks' of
-         Nothing -> Right $ reverse accum
+         Nothing ->
+          case stack of
+               Nil -> Right $ reverse accum
+               xs  -> Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
          Just { head, tail } ->
            case head of
-                BBStr s    -> go (DocText (Text s) : accum) tail
-                BBOpen t   -> go accum tail
-                BBClosed t -> go accum tail
+                BBStr s    -> go (DocText (Text s) : accum) saccum stack tail
+                BBOpen t   -> go accum saccum (t : stack) tail
+                BBClosed t ->
+                  case uncons stack of
+                       Nothing -> Left $ t <> " not pushed"
+                       Just { head : stHead, tail : stTail } -> do
+                           new <- runBBCode stHead saccum bmap
+                           go (new : accum) (Just new) stTail tail
 
 
 

@@ -25,6 +25,15 @@ main = runTest do
     Assert.equal "open(b),str(hi),closed(b)"
       $ flattenTokens (Cons (BBOpen "b") (Cons (BBStr "hi") (Cons (BBClosed "b") Nil)))
 
+    Assert.equal (Cons (BBStr "ping pong") Nil)
+      $ concatTokens (Cons (BBStr "ping") (Cons (BBStr " ") (Cons (BBStr "pong") Nil)))
+
+    Assert.equal (BBStr "ping pong")
+      $ concatBBStr (Cons (BBStr "ping") (Cons (BBStr " ") (Cons (BBStr "pong") Nil)))
+
+    Assert.equal (Cons (BBStr "ping") (Cons (BBOpen "b") (Cons (BBStr "pong") Nil)))
+      $ concatTokens (Cons (BBStr "ping") (Cons (BBOpen "b") (Cons (BBStr "pong") Nil)))
+
 
 
   test "Token Parser Tests" do
@@ -38,6 +47,10 @@ main = runTest do
     Assert.equal
       (Right $ Cons (BBOpen "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
       $ parseTokens' "[b]hello[/b]"
+
+    Assert.equal
+      (Right $ Cons (BBOpen "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
+      $ parseTokens' "[B]hello[/B]"
 
     Assert.equal
       (Right "open(b),open(u),str(hello),closed(u),closed(b)")
@@ -80,5 +93,23 @@ main = runTest do
       $ parseBBCode "[/ b ]"
 
     Assert.equal
+      (Left "b not pushed")
+      $ parseBBCode "[/b]hello"
+
+    Assert.equal
+      (Left "b not closed")
+      $ parseBBCode "[b]hello"
+
+    Assert.equal
       (Right $ Cons (DocText (Bold (Cons (Text "hello") Nil))) Nil)
       $ parseBBCode "[b]hello[/b]"
+
+{-
+    Assert.equal
+      (Right $ Cons (DocText (Underline (Cons (Bold (Cons (Text "hello") Nil)) Nil))) Nil)
+      $ parseBBCode "[u][b]hello[/b][/u]"
+
+    Assert.equal
+      (Right $ Cons (DocSpacing HR) Nil)
+      $ parseBBCode "[hr]"
+      -}

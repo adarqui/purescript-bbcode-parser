@@ -152,24 +152,8 @@ parseTokens' s = parseTokens s tokens
 
 
 
-{-
-runBBCode :: String -> List Token -> Tuple BBCode (List Token)
-runBBCode tag xs =
-  case tag of
-      "b" -> Tuple (DocText $ Bold (Cons (Text "hello") Nil)) Nil
-      _   -> Tuple (DocText $ Text "str") xs
-      -}
-
-{-
-runBBCode "b" xs = Tuple (DocText $ Bold (Cons (Text "hello") Nil)) Nil
-runBBCode "u" xs = Tuple (DocText $ Underline (Cons (Text "hello") Nil)) Nil
-runBBCode _   xs = Tuple (DocText $ Text "str") xs
--}
-
-
-
-runBBCode :: String -> Maybe BBCode -> M.Map String (Maybe BBCode -> Either String BBCode) -> Either String BBCode
-runBBCode _ Nothing _ = Right None
+runBBCode :: String -> List BBCode -> M.Map String (List BBCode -> Either String BBCode) -> Either String BBCode
+runBBCode _ Nil _ = Right None
 runBBCode s doc bmap  =
   case M.lookup s bmap of
        Nothing -> Left $ s <> " not found"
@@ -177,21 +161,33 @@ runBBCode s doc bmap  =
 
 
 
-runBold :: Maybe BBCode -> Either String BBCode
-runBold Nothing  = Right $ Bold Nil
-runBold (Just t) = Right $ Bold $ L.singleton t
-runBold _        = Left "bold error"
+runBold :: List BBCode -> Either String BBCode
+runBold Nil = Right $ Bold Nil
+runBold t   = Right $ Bold t
+runBold _   = Left "bold error"
 
-runHR :: Maybe BBCode -> Either String BBCode
-runHR Nothing = Right $ HR
+runItalic :: List BBCode -> Either String BBCode
+runItalic Nil = Right $ Italic Nil
+runItalic t   = Right $ Italic t
+runItalic _   = Left "bold error"
+
+runUnderline :: List BBCode -> Either String BBCode
+runUnderline Nil = Right $ Underline Nil
+runUnderline t   = Right $ Underline t
+runUnderline _   = Left "bold error"
+
+runHR :: List BBCode -> Either String BBCode
+runHR Nil = Right $ HR
 runHR _       = Left "hr error"
 
 
 
-defaultBBCodeMap :: M.Map String (Maybe BBCode -> Either String BBCode)
+defaultBBCodeMap :: M.Map String (List BBCode -> Either String BBCode)
 defaultBBCodeMap =
   M.fromFoldable [
-    Tuple "b" runBold
+    Tuple "b" runBold,
+    Tuple "i" runItalic,
+    Tuple "u" runUnderline
   ]
 
 
@@ -201,8 +197,8 @@ parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap
 
 
 
-parseBBCodeFromTokens' :: M.Map String (Maybe BBCode -> Either String BBCode) -> List Token -> Either String BBDoc
-parseBBCodeFromTokens' bmap toks = go Nil Nothing Nil toks
+parseBBCodeFromTokens' :: M.Map String (List BBCode -> Either String BBCode) -> List Token -> Either String BBDoc
+parseBBCodeFromTokens' bmap toks = go Nil Nil Nil toks
   where
   go accum saccum stack toks' =
     case uncons toks' of
@@ -212,14 +208,19 @@ parseBBCodeFromTokens' bmap toks = go Nil Nothing Nil toks
                xs  -> Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
          Just { head, tail } ->
            case head of
-                BBStr s    -> go ((Text s) : accum) saccum stack tail
+                BBStr s    ->
+                  if L.null stack
+                     then go ((Text s) : accum) saccum stack tail
+                     else go accum (Text s : saccum) stack tail
                 BBOpen t   -> go accum saccum (t : stack) tail
                 BBClosed t ->
                   case uncons stack of
                        Nothing -> Left $ t <> " not pushed"
                        Just { head : stHead, tail : stTail } -> do
                            new <- runBBCode stHead saccum bmap
-                           go (new : accum) (Just new) stTail tail
+                           if L.null stTail
+                              then go (new : accum) (L.singleton new) stTail tail
+                              else go accum (L.singleton new) stTail tail
 
 
 

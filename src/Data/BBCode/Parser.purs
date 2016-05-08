@@ -7,8 +7,7 @@ module Data.BBCode.Parser (
   parseTokens,
   parseTokens',
   parseBBCodeFromTokens,
-  parseBBCode,
-  parseBBCode'
+  parseBBCode
 ) where
 
 
@@ -25,7 +24,8 @@ import Data.Functor
 import Data.List hiding (many)
 import Data.List as L
 import Data.Array (many)
-import Data.String
+import Data.Maybe
+import Data.String hiding (uncons)
 import Prelude -- (Monad, Functor, bind, return, (<$>), (+))
 import Test.Assert
 import Text.Parsing.Parser
@@ -97,6 +97,14 @@ fromCharList = foldMap fromChar
 
 
 
+{-
+parseTag :: String -> BBDoc
+parseTag "b" = DocText <<< Bold
+parseTag _   = DocText <<< Text
+-}
+
+
+
 parseTokens :: forall s. s -> Parser s (List Token) -> Either String (List Token)
 parseTokens input p =
   case runParser input p of
@@ -110,15 +118,19 @@ parseTokens' s = parseTokens s tokens
 
 
 
-parseBBCodeFromTokens :: forall a. List Token -> Either String a
-parseBBCodeFromTokens _ = Left "error"
+parseBBCodeFromTokens :: List Token -> Either String BBDocument
+parseBBCodeFromTokens toks = go Nil toks
+  where
+  go accum toks' =
+    case uncons toks' of
+         Nothing -> Right $ reverse accum
+         Just { head, tail } ->
+           case head of
+                BBStr s    -> go (DocText (Text s) : accum) tail
+                BBOpen t   -> go accum tail
+                BBClosed t -> go accum tail
 
 
 
-parseBBCode :: forall s a. s -> Parser s a -> Either String a
-parseBBCode _ _ = Left "error"
-
-
-
-parseBBCode' :: String -> Either String (List BBDoc)
-parseBBCode' _ = Left "error"
+parseBBCode :: String -> Either String (List BBDoc)
+parseBBCode s = parseTokens' s >>= parseBBCodeFromTokens

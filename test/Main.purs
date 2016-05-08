@@ -15,6 +15,8 @@ import Data.BBCode.Types
 
 main = runTest do
 
+
+
   test "Token Helpers" do
 
     Assert.equal "str(hi)"
@@ -22,6 +24,8 @@ main = runTest do
 
     Assert.equal "open(b),str(hi),closed(b)"
       $ flattenTokens (Cons (BBOpen "b") (Cons (BBStr "hi") (Cons (BBClosed "b") Nil)))
+
+
 
   test "Token Parser Tests" do
 
@@ -50,3 +54,31 @@ main = runTest do
     Assert.equal
       (Right "open(b),str(a),open(u),str(b),closed(u),str(c)")
       $ flattenTokens <$> parseTokens' "[b]a[u]b[/u]c"
+
+
+
+  test "BBCode Parsing Tests" do
+
+    Assert.equal
+      (Right $ Cons (DocText $ Text "hello") Nil)
+      $ parseBBCode "hello"
+
+    Assert.equal
+      (Right $ Cons (DocText $ Text "[") Nil)
+      $ parseBBCode "["
+
+    Assert.equal
+      (Right $ Cons (DocText $ Text "]") Nil)
+      $ parseBBCode "]"
+
+    Assert.equal
+      (Right $ Cons (DocText $ Text "[ b ]") Nil)
+      $ parseBBCode "[ b ]"
+
+    Assert.equal
+      (Right $ Cons (DocText $ Text "[/ b ]") Nil)
+      $ parseBBCode "[/ b ]"
+
+    Assert.equal
+      (Right $ Cons (DocText (Bold (Cons (Text "hello") Nil))) Nil)
+      $ parseBBCode "[b]hello[/b]"

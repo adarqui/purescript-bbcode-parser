@@ -25,7 +25,7 @@ import Data.Foldable (foldl)
 import Data.List     (List)
 import Data.Maybe    (Maybe)
 import Elm.List      (intersperse)
-import Prelude       (class Show, show, class Eq, map, (<>), (==), (<<<))
+import Prelude       (class Show, show, class Eq, map, (<>), (==), (<<<), (&&))
 
 
 
@@ -40,9 +40,9 @@ instance tokenShow :: Show Token where
   show (BBStr s)    = "str("<>s<>")"
 
 instance tokenEq :: Eq Token where
-  eq (BBOpen s1)   (BBOpen s2)   = s1 == s2
-  eq (BBClosed s1) (BBClosed s2) = s1 == s2
-  eq (BBStr s1)    (BBStr s2)    = s1 == s2
+  eq (BBOpen t1)   (BBOpen t2)   = t1 == t2
+  eq (BBClosed t1) (BBClosed t2) = t1 == t2
+  eq (BBStr t1)    (BBStr t2)    = t1 == t2
   eq _             _             = false
 
 flattenTokens :: List Token -> String
@@ -55,9 +55,20 @@ type BBDocument = List BBDoc
 
 
 data BBDoc
-  = Text    BBText
-  | Media   BBMedia
-  | Spacing BBSpacing
+  = DocText    BBText
+  | DocMedia   BBMedia
+  | DocSpacing BBSpacing
+
+instance bbdocShow :: Show BBDoc where
+  show (DocText t)    = "DocText("<>show t<>")"
+  show (DocMedia _)   = "DocMedia"
+  show (DocSpacing _) = "DocSpacing"
+
+instance bbdocEq :: Eq BBDoc where
+  eq (DocText t1)    (DocText t2)    = t1 == t2
+  eq (DocMedia t1)   (DocMedia t2)   = t1 == t2
+  eq (DocSpacing t1) (DocSpacing t2) = t1 == t2
+  eq _                _              = false
 
 
 
@@ -77,6 +88,39 @@ data BBText
   | Code      String
   | Text      String
 
+instance bbtextShow :: Show BBText where
+  show (Bold _) = "Bold"
+  show (Italic _) = "Italic"
+  show (Underline _) = "Underline"
+  show (Strike _) = "Strike"
+  show (Size _ _) = "Size"
+  show (Color _ _) = "Color"
+  show (Center _) = "Center"
+  show (Quote _ _) = "Quote"
+  show (Link _ _) = "Link"
+  show (List _) = "List"
+  show (OrdList _) = "OrdList"
+  show (Table _) = "Table"
+  show (Code _) = "Code"
+  show (Text t) = "Text("<>t<>")"
+
+instance bbtextEq :: Eq BBText where
+  eq (Bold t1)      (Bold t2)      = t1 == t2
+  eq (Italic t1)    (Italic t2)    = t1 == t2
+  eq (Underline t1) (Underline t2) = t1 == t2
+  eq (Strike t1)    (Strike t2)    = t1 == t2
+  eq (Size s1 t1)   (Size s2 t2)   = s1 == s2 && t1 == t2
+  eq (Color c1 t1)  (Color c2 t2)  = c1 == c2 && t1 == t2
+  eq (Center t1)    (Center t2)    = t1 == t2
+  eq (Quote a1 t1)  (Quote a2 t2)  = a1 == a2 && t1 == t2
+  eq (Link n1 t1)   (Link n2 t2)   = n1 == n2 && t1 == t2
+  eq (List t1)      (List t2)      = t1 == t2
+  eq (OrdList t1)   (OrdList t2)   = t1 == t2
+  eq (Table t1)     (Table t2)     = t1 == t2
+  eq (Code t1)      (Code t2)      = t1 == t2
+  eq (Text t1)      (Text t2)      = t1 == t2
+  eq _              _              = false
+
 
 
 data BBMedia
@@ -88,26 +132,50 @@ data BBMedia
   | Streamable MediaURL
   | Imgur      MediaURL
 
+instance bbmediaShow :: Show BBMedia where
+  show _ = "BBMedia"
+
+instance bbmediaEq :: Eq BBMedia where
+  eq (Image ih1 iw1 u1) (Image ih2 iw2 u2) = ih1 == ih2 && iw1 == iw2 && u1 == u2
+  eq _                  _                  = false
+
 
 
 data BBSize
   = SizePx Int
+
+instance bbsizeEq :: Eq BBSize where
+  eq (SizePx t1) (SizePx t2) = t1 == t2
+  eq _           _           = false
 
 
 
 data BBList
   = ListItem BBText
 
+instance bblistEq :: Eq BBList where
+  eq (ListItem t1) (ListItem t2) = t1 == t2
+  eq _             _             = false
+
 
 
 data BBTable
   = TableRow BBText
+
+instance bbtableEq :: Eq BBTable where
+  eq (TableRow t1) (TableRow t2) = t1 == t2
+  eq _             _             = false
 
 
 
 data ImageSize
   = ImagePx Int
   | ImagePercent Number
+
+instance imageSizeEq :: Eq ImageSize where
+  eq (ImagePx t1) (ImagePx t2)           = t1 == t2
+  eq (ImagePercent t1) (ImagePercent t2) = t1 == t2
+  eq _             _                     = false
 
 
 
@@ -116,11 +184,25 @@ data BBColor
   | White
   | Blue
 
+instance bbcolorEq :: Eq BBColor where
+  eq Red   Red   = true
+  eq White White = true
+  eq Blue  Blue  = true
+  eq _     _     = false
+
 
 
 data BBSpacing
   = NL
   | HR
+
+instance bbspacingShow :: Show BBSpacing where
+  show _ = "BBSpacing"
+
+instance bbspacingEq :: Eq BBSpacing where
+  eq NL NL = true
+  eq HR HR = true
+  eq _  _  = false
 
 
 

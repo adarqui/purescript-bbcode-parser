@@ -112,8 +112,12 @@ main = runTest do
       (Right $ Cons (Italic (Cons (Underline (Cons (Bold (Cons (Text "hello") Nil)) Nil)) Nil)) Nil)
       $ parseBBCode "[i][u][b]hello[/b][/u][/i]"
 
-{-
     Assert.equal
-      (Right $ Cons (DocSpacing HR) Nil)
-      $ parseBBCode "[hr]"
-      -}
+      (Right $
+        Cons
+          (Text "ping")
+          (Cons
+            (Bold (Cons (Text "hello") Nil))
+          (Cons (Text "pong") Nil))
+      )
+      $ parseBBCode "ping[b]hello[/b]pong"

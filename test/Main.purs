@@ -73,23 +73,23 @@ main = runTest do
   test "BBCode Parsing Tests" do
 
     Assert.equal
-      (Right $ Cons (DocText $ Text "hello") Nil)
+      (Right $ Cons (Text "hello") Nil)
       $ parseBBCode "hello"
 
     Assert.equal
-      (Right $ Cons (DocText $ Text "[") Nil)
+      (Right $ Cons (Text "[") Nil)
       $ parseBBCode "["
 
     Assert.equal
-      (Right $ Cons (DocText $ Text "]") Nil)
+      (Right $ Cons (Text "]") Nil)
       $ parseBBCode "]"
 
     Assert.equal
-      (Right $ Cons (DocText $ Text "[ b ]") Nil)
+      (Right $ Cons (Text "[ b ]") Nil)
       $ parseBBCode "[ b ]"
 
     Assert.equal
-      (Right $ Cons (DocText $ Text "[/ b ]") Nil)
+      (Right $ Cons (Text "[/ b ]") Nil)
       $ parseBBCode "[/ b ]"
 
     Assert.equal
@@ -101,7 +101,7 @@ main = runTest do
       $ parseBBCode "[b]hello"
 
     Assert.equal
-      (Right $ Cons (DocText (Bold (Cons (Text "hello") Nil))) Nil)
+      (Right $ Cons (Bold (Cons (Text "hello") Nil)) Nil)
       $ parseBBCode "[b]hello[/b]"
 
 {-

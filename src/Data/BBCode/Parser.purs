@@ -107,14 +107,6 @@ fromCharListToLower = toLower <<< fromCharList
 
 
 
-{-
-parseTag :: String -> BBDoc
-parseTag "b" = DocText <<< Bold
-parseTag _   = DocText <<< Text
--}
-
-
-
 -- | concat consecutive BBStr's
 --
 concatTokens :: List Token -> List Token
@@ -161,7 +153,7 @@ parseTokens' s = parseTokens s tokens
 
 
 {-
-runBBCode :: String -> List Token -> Tuple BBDoc (List Token)
+runBBCode :: String -> List Token -> Tuple BBCode (List Token)
 runBBCode tag xs =
   case tag of
       "b" -> Tuple (DocText $ Bold (Cons (Text "hello") Nil)) Nil
@@ -176,8 +168,8 @@ runBBCode _   xs = Tuple (DocText $ Text "str") xs
 
 
 
-runBBCode :: String -> Maybe BBDoc -> M.Map String (Maybe BBDoc -> Either String BBDoc) -> Either String BBDoc
-runBBCode _ Nothing _ = Right DocNone
+runBBCode :: String -> Maybe BBCode -> M.Map String (Maybe BBCode -> Either String BBCode) -> Either String BBCode
+runBBCode _ Nothing _ = Right None
 runBBCode s doc bmap  =
   case M.lookup s bmap of
        Nothing -> Left $ s <> " not found"
@@ -185,18 +177,18 @@ runBBCode s doc bmap  =
 
 
 
-runBold :: Maybe BBDoc -> Either String BBDoc
-runBold Nothing            = Right $ DocText $ Bold Nil
-runBold (Just (DocText t)) = Right $ DocText $ Bold $ L.singleton t
-runBold _                  = Left "bold error"
+runBold :: Maybe BBCode -> Either String BBCode
+runBold Nothing  = Right $ Bold Nil
+runBold (Just t) = Right $ Bold $ L.singleton t
+runBold _        = Left "bold error"
 
-runHR :: Maybe BBDoc -> Either String BBDoc
-runHR Nothing = Right $ DocSpacing HR
+runHR :: Maybe BBCode -> Either String BBCode
+runHR Nothing = Right $ HR
 runHR _       = Left "hr error"
 
 
 
-defaultBBCodeMap :: M.Map String (Maybe BBDoc -> Either String BBDoc)
+defaultBBCodeMap :: M.Map String (Maybe BBCode -> Either String BBCode)
 defaultBBCodeMap =
   M.fromFoldable [
     Tuple "b" runBold
@@ -204,12 +196,12 @@ defaultBBCodeMap =
 
 
 
-parseBBCodeFromTokens :: List Token -> Either String BBDocument
+parseBBCodeFromTokens :: List Token -> Either String BBDoc
 parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap
 
 
 
-parseBBCodeFromTokens' :: M.Map String (Maybe BBDoc -> Either String BBDoc) -> List Token -> Either String BBDocument
+parseBBCodeFromTokens' :: M.Map String (Maybe BBCode -> Either String BBCode) -> List Token -> Either String BBDoc
 parseBBCodeFromTokens' bmap toks = go Nil Nothing Nil toks
   where
   go accum saccum stack toks' =
@@ -220,7 +212,7 @@ parseBBCodeFromTokens' bmap toks = go Nil Nothing Nil toks
                xs  -> Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
          Just { head, tail } ->
            case head of
-                BBStr s    -> go (DocText (Text s) : accum) saccum stack tail
+                BBStr s    -> go ((Text s) : accum) saccum stack tail
                 BBOpen t   -> go accum saccum (t : stack) tail
                 BBClosed t ->
                   case uncons stack of
@@ -231,5 +223,5 @@ parseBBCodeFromTokens' bmap toks = go Nil Nothing Nil toks
 
 
 
-parseBBCode :: String -> Either String (List BBDoc)
+parseBBCode :: String -> Either String (List BBCode)
 parseBBCode s = parseTokens' s >>= parseBBCodeFromTokens

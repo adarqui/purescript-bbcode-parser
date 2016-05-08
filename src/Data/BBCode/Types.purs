@@ -1,15 +1,12 @@
 module Data.BBCode.Types (
   Token (..),
   flattenTokens,
-  BBDocument,
   BBDoc (..),
-  BBText (..),
-  BBMedia (..),
+  BBCode (..),
   BBSize (..),
   BBList (..),
   BBTable (..),
   BBColor (..),
-  BBSpacing (..),
   ImageSize (..),
   QuoteAuthor,
   LinkURL,
@@ -51,48 +48,37 @@ flattenTokens = foldl (<>) "" <<< intersperse "," <<< map show
 
 
 
-type BBDocument = List BBDoc
+type BBDoc = List BBCode
 
 
 
-data BBDoc
-  = DocText    BBText
-  | DocMedia   BBMedia
-  | DocSpacing BBSpacing
-  | DocNone
+data BBCode
+  = Bold       (List BBCode)
+  | Italic     (List BBCode)
+  | Underline  (List BBCode)
+  | Strike     (List BBCode)
+  | Size       BBSize  (List BBCode)
+  | Color      BBColor (List BBCode)
+  | Center     (List BBCode)
+  | Quote      (Maybe QuoteAuthor) (List BBCode)
+  | Link       (Maybe LinkName) LinkURL
+  | List       BBList
+  | OrdList    BBList
+  | Table      BBTable
+  | Code       String
+  | Text       String
+  | Image      (Maybe ImageHeight) (Maybe ImageWidth) MediaURL
+  | Youtube    MediaURL
+  | Vimedo     MediaURL
+  | Facebook   MediaURL
+  | Instagram  MediaURL
+  | Streamable MediaURL
+  | Imgur      MediaURL
+  | HR
+  | NL
+  | None
 
-instance bbdocShow :: Show BBDoc where
-  show (DocText t)    = "DocText("<>show t<>")"
-  show (DocMedia _)   = "DocMedia"
-  show (DocSpacing _) = "DocSpacing"
-  show DocNone        = "DocNone"
-
-instance bbdocEq :: Eq BBDoc where
-  eq (DocText t1)    (DocText t2)    = t1 == t2
-  eq (DocMedia t1)   (DocMedia t2)   = t1 == t2
-  eq (DocSpacing t1) (DocSpacing t2) = t1 == t2
-  eq DocNone         DocNone         = true
-  eq _                _              = false
-
-
-
-data BBText
-  = Bold      (List BBText)
-  | Italic    (List BBText)
-  | Underline (List BBText)
-  | Strike    (List BBText)
-  | Size      BBSize  (List BBText)
-  | Color     BBColor (List BBText)
-  | Center    (List BBText)
-  | Quote     (Maybe QuoteAuthor) (List BBText)
-  | Link      (Maybe LinkName) LinkURL
-  | List      BBList
-  | OrdList   BBList
-  | Table     BBTable
-  | Code      String
-  | Text      String
-
-instance bbtextShow :: Show BBText where
+instance bbcodeShow :: Show BBCode where
   show (Bold t)      = "Bold("<>show t<>")"
   show (Italic t)    = "Italic("<>show t<>")"
   show (Underline t) = "Underline("<>show t<>")"
@@ -107,8 +93,12 @@ instance bbtextShow :: Show BBText where
   show (Table _)     = "Table"
   show (Code t)      = "Code("<>show t<>")"
   show (Text t)      = "Text("<>t<>")"
+  show HR            = "HR"
+  show NL            = "NL"
+  show None          = "None"
+  show _             = "Unknown"
 
-instance bbtextEq :: Eq BBText where
+instance bbcodeEq :: Eq BBCode where
   eq (Bold t1)      (Bold t2)      = t1 == t2
   eq (Italic t1)    (Italic t2)    = t1 == t2
   eq (Underline t1) (Underline t2) = t1 == t2
@@ -123,25 +113,10 @@ instance bbtextEq :: Eq BBText where
   eq (Table t1)     (Table t2)     = t1 == t2
   eq (Code t1)      (Code t2)      = t1 == t2
   eq (Text t1)      (Text t2)      = t1 == t2
+  eq HR             HR             = true
+  eq NL             NL             = true
+  eq None           None           = true
   eq _              _              = false
-
-
-
-data BBMedia
-  = Image      (Maybe ImageHeight) (Maybe ImageWidth) MediaURL
-  | Youtube    MediaURL
-  | Vimedo     MediaURL
-  | Facebook   MediaURL
-  | Instagram  MediaURL
-  | Streamable MediaURL
-  | Imgur      MediaURL
-
-instance bbmediaShow :: Show BBMedia where
-  show _ = "BBMedia"
-
-instance bbmediaEq :: Eq BBMedia where
-  eq (Image ih1 iw1 u1) (Image ih2 iw2 u2) = ih1 == ih2 && iw1 == iw2 && u1 == u2
-  eq _                  _                  = false
 
 
 
@@ -155,7 +130,7 @@ instance bbsizeEq :: Eq BBSize where
 
 
 data BBList
-  = ListItem BBText
+  = ListItem BBCode
 
 instance bblistEq :: Eq BBList where
   eq (ListItem t1) (ListItem t2) = t1 == t2
@@ -164,7 +139,7 @@ instance bblistEq :: Eq BBList where
 
 
 data BBTable
-  = TableRow BBText
+  = TableRow BBCode
 
 instance bbtableEq :: Eq BBTable where
   eq (TableRow t1) (TableRow t2) = t1 == t2
@@ -177,9 +152,9 @@ data ImageSize
   | ImagePercent Number
 
 instance imageSizeEq :: Eq ImageSize where
-  eq (ImagePx t1) (ImagePx t2)           = t1 == t2
+  eq (ImagePx t1)      (ImagePx t2)      = t1 == t2
   eq (ImagePercent t1) (ImagePercent t2) = t1 == t2
-  eq _             _                     = false
+  eq _                 _                 = false
 
 
 
@@ -193,20 +168,6 @@ instance bbcolorEq :: Eq BBColor where
   eq White White = true
   eq Blue  Blue  = true
   eq _     _     = false
-
-
-
-data BBSpacing
-  = NL
-  | HR
-
-instance bbspacingShow :: Show BBSpacing where
-  show _ = "BBSpacing"
-
-instance bbspacingEq :: Eq BBSpacing where
-  eq NL NL = true
-  eq HR HR = true
-  eq _  _  = false
 
 
 

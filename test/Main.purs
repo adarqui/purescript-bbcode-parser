@@ -129,3 +129,7 @@ main = runTest do
     Assert.equal
       (Right (Cons (Youtube "https://www.youtube.com/watch?v=video") Nil))
       $ parseBBCode "[youtube]https://www.youtube.com/watch?v=video[/youtube]"
+
+    Assert.equal
+      (Right (Cons HR Nil))
+      $ parseBBCode "[hr]"

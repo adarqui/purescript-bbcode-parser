@@ -264,7 +264,16 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
                  go tail level
 
           BBOpen t   -> do
-            modify (\st -> st{ stack = t : st.stack })
+            -- We need to handle things differently based upon whether or not the bbcode is:
+            -- 1. a unary operator - no closing tag
+            -- 2. a consumer - consumes all other tags until the consumer's closing tag is found
+            -- 3. a normal bbcode operator which has an open tag, content, and a closing tag
+            if M.member t umap
+               then do
+                 let new = runBBCode t Nil umap
+                 modify (\st -> st{ accum = (new : st.accum) })
+               else do
+                 modify (\st -> st{ stack = t : st.stack })
             go tail (level+1)
 
           BBClosed t -> do

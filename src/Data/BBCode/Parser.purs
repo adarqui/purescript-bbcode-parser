@@ -178,6 +178,15 @@ runHR :: List BBCode -> Either String BBCode
 runHR Nil = Right $ HR
 runHR _       = Left "hr error"
 
+--
+-- TODO FIXME: media needs proper url parsing/verification
+--
+
+runYoutube :: List BBCode -> Either String BBCode
+runYoutube (Cons (Text url) Nil) = Right $ Youtube url
+runYoutube (Cons _ Nil)          = Left "youtube error: only urls may be wrapped in youtube"
+runYoutube _ = Left "youtube error"
+
 
 
 defaultBBCodeMap :: M.Map String (List BBCode -> Either String BBCode)
@@ -185,7 +194,9 @@ defaultBBCodeMap =
   M.fromFoldable [
     Tuple "b" runBold,
     Tuple "i" runItalic,
-    Tuple "u" runUnderline
+    Tuple "u" runUnderline,
+    Tuple "hr" runHR,
+    Tuple "youtube" runYoutube
   ]
 
 

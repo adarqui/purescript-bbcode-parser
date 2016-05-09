@@ -125,3 +125,7 @@ main = runTest do
     Assert.equal
       (Right (Cons (Text("zero")) (Cons (Underline(Cons (Text("one")) (Cons (Bold(Cons (Text("two")) (Nil))) (Cons (Text("three")) (Nil))))) (Cons (Text("four")) (Nil)))))
       $ parseBBCode "zero[u]one[b]two[/b]three[/u]four"
+
+    Assert.equal
+      (Right (Cons (Youtube "https://www.youtube.com/watch?v=video") Nil))
+      $ parseBBCode "[youtube]https://www.youtube.com/watch?v=video[/youtube]"

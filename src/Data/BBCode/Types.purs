@@ -87,7 +87,7 @@ data BBCode
   | Text       String
   | Image      (Maybe ImageHeight) (Maybe ImageWidth) MediaURL
   | Youtube    MediaURL
-  | Vimedo     MediaURL
+  | Vimeo      MediaURL
   | Facebook   MediaURL
   | Instagram  MediaURL
   | Streamable MediaURL
@@ -111,6 +111,15 @@ instance bbcodeShow :: Show BBCode where
   show (Table _)     = "Table"
   show (Code t)      = "Code("<>show t<>")"
   show (Text t)      = "Text("<>t<>")"
+
+  show (Image mh mw url) = "Image"
+  show (Youtube url)     = "Youtube("<>url<>")"
+  show (Vimeo url)       = "Vimeo("<>url<>")"
+  show (Facebook url)    = "Facebook("<>url<>")"
+  show (Instagram url)   = "Instagram("<>url<>")"
+  show (Streamable url)  = "Streamable("<>url<>")"
+  show (Imgur url)       = "Imgur("<>url<>")"
+
   show HR            = "HR"
   show NL            = "NL"
   show None          = "None"
@@ -131,6 +140,15 @@ instance bbcodeEq :: Eq BBCode where
   eq (Table t1)     (Table t2)     = t1 == t2
   eq (Code t1)      (Code t2)      = t1 == t2
   eq (Text t1)      (Text t2)      = t1 == t2
+
+  eq (Image mh1 mw1 url1 ) (Image mh2 mw2 url2) = mh1 == mh2 && mw1 == mw2 && url1 == url2
+  eq (Youtube url1) (Youtube url2)              = url1 == url2
+  eq (Vimeo url1) (Vimeo url2)                  = url1 == url2
+  eq (Facebook url1) (Facebook url2)            = url1 == url2
+  eq (Instagram url1) (Instagram url2)          = url1 == url2
+  eq (Streamable url1) (Streamable url2)        = url1 == url2
+  eq (Imgur url1) (Imgur url2)                  = url1 == url2
+
   eq HR             HR             = true
   eq NL             NL             = true
   eq None           None           = true

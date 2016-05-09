@@ -121,3 +121,7 @@ main = runTest do
           (Cons (Text "pong") Nil))
       )
       $ parseBBCode "ping[b]hello[/b]pong"
+
+    Assert.equal
+      (Right (Cons (Text("zero")) (Cons (Underline(Cons (Text("one")) (Cons (Bold(Cons (Text("two")) (Nil))) (Cons (Text("three")) (Nil))))) (Cons (Text("four")) (Nil)))))
+      $ parseBBCode "zero[u]one[b]two[/b]three[/u]four"

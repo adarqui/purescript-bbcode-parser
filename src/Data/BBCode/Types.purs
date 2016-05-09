@@ -1,4 +1,7 @@
 module Data.BBCode.Types (
+  ParseEff,
+  ParseState,
+  defaultParseState,
   Token (..),
   flattenTokens,
   BBDoc (..),
@@ -18,12 +21,27 @@ module Data.BBCode.Types (
 
 
 
+import Control.Monad.RWS
 import Data.Foldable (foldl)
-import Data.List     (List)
+import Data.List     (List(..))
 import Data.Maybe    (Maybe)
 import Data.String   (toLower)
+import Data.Tuple    (Tuple)
 import Elm.List      (intersperse)
-import Prelude       (class Show, show, class Eq, map, (<>), (==), (<<<), (&&))
+import Prelude       (Unit, class Show, show, class Eq, map, (<>), (==), (<<<), (&&), (+), (-))
+
+
+
+type ParseState = {
+  accum :: List BBCode,
+  stack :: List String,
+  saccum :: List (Tuple Int BBCode)
+}
+
+defaultParseState :: ParseState
+defaultParseState = { accum: Nil, stack: Nil, saccum: Nil }
+
+type ParseEff = RWS Unit Unit ParseState
 
 
 

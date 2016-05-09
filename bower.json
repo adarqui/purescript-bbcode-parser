@@ -15,7 +15,8 @@
     "purescript-parsing": "^0.8.0",
     "purescript-test-unit": "^6.0.0",
     "purescript-assert": "^0.1.1",
-    "purescript-elm-compat": "^1.0.0"
+    "purescript-elm-compat": "^1.0.0",
+    "purescript-transformers": "^0.8.4"
   },
   "resolutions": {
     "purescript-sequences": "^0.6.0"

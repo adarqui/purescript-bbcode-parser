@@ -9,7 +9,9 @@ module Data.BBCode.Parser (
   parseTokens,
   parseTokens',
   parseBBCodeFromTokens,
-  parseBBCode
+  parseBBCode,
+  _parseBBCodeFromTokens,
+  _parseBBCode
 ) where
 
 
@@ -20,6 +22,7 @@ import Control.Lazy -- (fix)
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
 import Control.Monad.Eff.Console
+import Control.Monad.RWS
 import Data.Either
 import Data.Foldable
 import Data.Functor
@@ -192,13 +195,13 @@ defaultBBCodeMap =
 
 
 
-parseBBCodeFromTokens :: List Token -> Either String BBDoc
-parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap
+_parseBBCodeFromTokens :: List Token -> Either String BBDoc
+_parseBBCodeFromTokens = _parseBBCodeFromTokens' defaultBBCodeMap
 
 
 
-parseBBCodeFromTokens' :: M.Map String (List BBCode -> Either String BBCode) -> List Token -> Either String BBDoc
-parseBBCodeFromTokens' bmap toks = go Nil Nil Nil toks
+_parseBBCodeFromTokens' :: M.Map String (List BBCode -> Either String BBCode) -> List Token -> Either String BBDoc
+_parseBBCodeFromTokens' bmap toks = go Nil Nil Nil toks
   where
   go accum saccum stack toks' =
     case uncons toks' of
@@ -211,7 +214,7 @@ parseBBCodeFromTokens' bmap toks = go Nil Nil Nil toks
                 BBStr s    ->
                   if L.null stack
                      then go ((Text s) : accum) saccum stack tail
-                     else go accum (Text s : saccum) stack tail
+                     else go accum ((Text s) : saccum) stack tail
                 BBOpen t   -> go accum saccum (t : stack) tail
                 BBClosed t ->
                   case uncons stack of
@@ -219,10 +222,77 @@ parseBBCodeFromTokens' bmap toks = go Nil Nil Nil toks
                        Just { head : stHead, tail : stTail } -> do
                            new <- runBBCode stHead saccum bmap
                            if L.null stTail
-                              then go (new : accum) (L.singleton new) stTail tail
+                              then go (new : accum) Nil stTail tail
                               else go accum (L.singleton new) stTail tail
 
 
 
+_parseBBCode :: String -> Either String (List BBCode)
+_parseBBCode s = parseTokens' s >>= _parseBBCodeFromTokens
+
+
+
+
+---
+---
+---
+
+parseBBCodeFromTokens :: List Token -> ParseEff (Either String BBDoc)
+parseBBCodeFromTokens toks = parseBBCodeFromTokens' defaultBBCodeMap toks
+
+
+
+parseBBCodeFromTokens' :: M.Map String (List BBCode -> Either String BBCode) -> List Token -> ParseEff (Either String BBDoc)
+parseBBCodeFromTokens' bmap toks = do
+  go toks 0
+  where
+  go toks' level = do
+    stack <- gets _.stack
+    accum <- gets _.accum
+    saccum <- gets _.saccum
+    case uncons toks' of
+         Nothing -> do
+          case stack of
+               Nil -> return $ Right $ reverse accum
+               xs  -> return $ Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
+         Just { head, tail } ->
+           case head of
+                BBStr s    -> do
+                  if L.null stack
+                     then do
+                       modify (\st -> st{ accum = (Text s : st.accum) })
+                       go tail level
+                     else do
+                       modify (\st -> st{ saccum = (Tuple level (Text s)) : st.saccum })
+                       go tail level
+                BBOpen t   -> do
+                  modify (\st -> st{ stack = t : st.stack })
+                  go tail (level+1)
+                BBClosed t ->
+                  case uncons stack of
+                       Nothing -> return $ Left $ t <> " not pushed"
+                       Just { head : stHead, tail : stTail } -> do
+                           let
+                            beneath = filter (\(Tuple l v) -> l < level) saccum
+                            at_or_above = filter (\(Tuple l v) -> l >= level) saccum
+                            new = runBBCode stHead (L.reverse $ map snd at_or_above) bmap
+                           case new of
+                             Left err -> return $ Left err
+                             Right new' -> do
+                               if L.null stTail
+                                  then do
+                                    modify (\st -> st{ accum = new' : st.accum, stack = stTail })
+                                    go tail (level-1)
+                                  else do
+                                    modify (\st -> st{ saccum = (Tuple level new' : beneath), stack = stTail })
+                                    go tail (level-1)
+
+
+
 parseBBCode :: String -> Either String (List BBCode)
-parseBBCode s = parseTokens' s >>= parseBBCodeFromTokens
+parseBBCode s =
+  case toks of
+       Left s   -> Left s
+       Right bb -> fst $ evalRWS (parseBBCodeFromTokens bb) unit defaultParseState
+  where
+  toks = parseTokens' s

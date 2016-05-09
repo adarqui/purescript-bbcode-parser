@@ -153,7 +153,7 @@ parseTokens' s = parseTokens s tokens
 
 
 
-runBBCode :: String -> List BBCode -> M.Map String (List BBCode -> Either String BBCode) -> Either String BBCode
+runBBCode :: String -> List BBCode -> BBCodeMap -> Either String BBCode
 runBBCode _ Nil _ = Right None
 runBBCode s doc bmap  =
   case M.lookup s bmap of
@@ -174,6 +174,9 @@ runUnderline :: List BBCode -> Either String BBCode
 runUnderline t   = Right $ Underline t
 runUnderline _   = Left "bold error"
 
+runCode :: List BBCode -> Either String BBCode
+runCode _ = Left "not implemented"
+
 runHR :: List BBCode -> Either String BBCode
 runHR Nil = Right $ HR
 runHR _       = Left "hr error"
@@ -189,25 +192,52 @@ runYoutube _                     = Left "youtube error"
 
 
 
-defaultBBCodeMap :: M.Map String (List BBCode -> Either String BBCode)
+-- | The default BBCode map specifies all bbcode that works within open & closed tags
+--
+defaultBBCodeMap :: BBCodeMap
 defaultBBCodeMap =
   M.fromFoldable [
     Tuple "b" runBold,
     Tuple "i" runItalic,
     Tuple "u" runUnderline,
-    Tuple "hr" runHR,
     Tuple "youtube" runYoutube
   ]
 
 
 
+-- | The unary map is for bbcode that doesn't have a closing tag
+--
+defaultUnaryBBCodeMap :: BBCodeMap
+defaultUnaryBBCodeMap =
+  M.fromFoldable [
+    Tuple "hr" runHR
+  ]
+
+
+
+-- | The "Consume" map is for bbcode that consumes all other tags up until its own closing tag
+--
+defaultConsumeBBCodeMap :: BBCodeMap
+defaultConsumeBBCodeMap =
+  M.fromFoldable [
+    Tuple "code" runCode,
+    Tuple "c" runCode
+  ]
+
+
+
 parseBBCodeFromTokens :: List Token -> ParseEff (Either String BBDoc)
-parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap
+parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap defaultUnaryBBCodeMap defaultConsumeBBCodeMap
 
 
 
-parseBBCodeFromTokens' :: M.Map String (List BBCode -> Either String BBCode) -> List Token -> ParseEff (Either String BBDoc)
-parseBBCodeFromTokens' bmap toks = do
+parseBBCodeFromTokens' ::
+     BBCodeMap
+  -> BBCodeMap
+  -> BBCodeMap
+  -> List Token
+  -> ParseEff (Either String BBDoc)
+parseBBCodeFromTokens' bmap umap cmap toks = do
   go toks 0
 
   where

@@ -4,6 +4,7 @@ module Data.BBCode.Types (
   defaultParseState,
   Token (..),
   flattenTokens,
+  BBCodeMap,
   BBDoc (..),
   BBCode (..),
   BBSize (..),
@@ -21,14 +22,16 @@ module Data.BBCode.Types (
 
 
 
-import Control.Monad.RWS
-import Data.Foldable (foldl)
-import Data.List     (List(..))
-import Data.Maybe    (Maybe)
-import Data.String   (toLower)
-import Data.Tuple    (Tuple)
-import Elm.List      (intersperse)
-import Prelude       (Unit, class Show, show, class Eq, map, (<>), (==), (<<<), (&&), (+), (-))
+import Control.Monad.RWS (RWS)
+import Data.Either       (Either)
+import Data.Foldable     (foldl)
+import Data.List         (List(..))
+import Data.Map          as M
+import Data.Maybe        (Maybe)
+import Data.String       (toLower)
+import Data.Tuple        (Tuple)
+import Elm.List          (intersperse)
+import Prelude           (Unit, class Show, show, class Eq, map, (<>), (==), (<<<), (&&), (+), (-))
 
 
 
@@ -63,6 +66,10 @@ instance tokenEq :: Eq Token where
 
 flattenTokens :: List Token -> String
 flattenTokens = foldl (<>) "" <<< intersperse "," <<< map show
+
+
+
+type BBCodeMap = M.Map String (List BBCode -> Either String BBCode)
 
 
 

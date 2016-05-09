@@ -154,7 +154,6 @@ parseTokens' s = parseTokens s tokens
 
 
 runBBCode :: String -> List BBCode -> BBCodeMap -> Either String BBCode
-runBBCode _ Nil _ = Right None
 runBBCode s doc bmap  =
   case M.lookup s bmap of
        Nothing -> Left $ s <> " not found"
@@ -270,11 +269,14 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
             -- 3. a normal bbcode operator which has an open tag, content, and a closing tag
             if M.member t umap
                then do
-                 let new = runBBCode t Nil umap
-                 modify (\st -> st{ accum = (new : st.accum) })
+                 case (runBBCode t Nil umap) of
+                   Left err   -> return $ Left err
+                   Right new' -> do
+                     modify (\st -> st{ accum = (new' : st.accum) })
+                     go tail level
                else do
                  modify (\st -> st{ stack = t : st.stack })
-            go tail (level+1)
+                 go tail (level+1)
 
           BBClosed t -> do
             case uncons stack of

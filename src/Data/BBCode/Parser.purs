@@ -9,9 +9,7 @@ module Data.BBCode.Parser (
   parseTokens,
   parseTokens',
   parseBBCodeFromTokens,
-  parseBBCode,
-  _parseBBCodeFromTokens,
-  _parseBBCode
+  parseBBCode
 ) where
 
 
@@ -195,50 +193,8 @@ defaultBBCodeMap =
 
 
 
-_parseBBCodeFromTokens :: List Token -> Either String BBDoc
-_parseBBCodeFromTokens = _parseBBCodeFromTokens' defaultBBCodeMap
-
-
-
-_parseBBCodeFromTokens' :: M.Map String (List BBCode -> Either String BBCode) -> List Token -> Either String BBDoc
-_parseBBCodeFromTokens' bmap toks = go Nil Nil Nil toks
-  where
-  go accum saccum stack toks' =
-    case uncons toks' of
-         Nothing ->
-          case stack of
-               Nil -> Right $ reverse accum
-               xs  -> Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
-         Just { head, tail } ->
-           case head of
-                BBStr s    ->
-                  if L.null stack
-                     then go ((Text s) : accum) saccum stack tail
-                     else go accum ((Text s) : saccum) stack tail
-                BBOpen t   -> go accum saccum (t : stack) tail
-                BBClosed t ->
-                  case uncons stack of
-                       Nothing -> Left $ t <> " not pushed"
-                       Just { head : stHead, tail : stTail } -> do
-                           new <- runBBCode stHead saccum bmap
-                           if L.null stTail
-                              then go (new : accum) Nil stTail tail
-                              else go accum (L.singleton new) stTail tail
-
-
-
-_parseBBCode :: String -> Either String (List BBCode)
-_parseBBCode s = parseTokens' s >>= _parseBBCodeFromTokens
-
-
-
-
----
----
----
-
 parseBBCodeFromTokens :: List Token -> ParseEff (Either String BBDoc)
-parseBBCodeFromTokens toks = parseBBCodeFromTokens' defaultBBCodeMap toks
+parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap
 
 
 

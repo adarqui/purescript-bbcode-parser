@@ -163,17 +163,14 @@ runBBCode s doc bmap  =
 
 
 runBold :: List BBCode -> Either String BBCode
-runBold Nil = Right $ Bold Nil
 runBold t   = Right $ Bold t
 runBold _   = Left "bold error"
 
 runItalic :: List BBCode -> Either String BBCode
-runItalic Nil = Right $ Italic Nil
 runItalic t   = Right $ Italic t
 runItalic _   = Left "bold error"
 
 runUnderline :: List BBCode -> Either String BBCode
-runUnderline Nil = Right $ Underline Nil
 runUnderline t   = Right $ Underline t
 runUnderline _   = Left "bold error"
 
@@ -201,47 +198,54 @@ parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap
 parseBBCodeFromTokens' :: M.Map String (List BBCode -> Either String BBCode) -> List Token -> ParseEff (Either String BBDoc)
 parseBBCodeFromTokens' bmap toks = do
   go toks 0
+
   where
+  go :: List Token -> Int -> ParseEff (Either String BBDoc)
   go toks' level = do
+
     stack <- gets _.stack
     accum <- gets _.accum
     saccum <- gets _.saccum
+
     case uncons toks' of
-         Nothing -> do
-          case stack of
-               Nil -> return $ Right $ reverse accum
-               xs  -> return $ Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
-         Just { head, tail } ->
-           case head of
-                BBStr s    -> do
-                  if L.null stack
-                     then do
-                       modify (\st -> st{ accum = (Text s : st.accum) })
-                       go tail level
-                     else do
-                       modify (\st -> st{ saccum = (Tuple level (Text s)) : st.saccum })
-                       go tail level
-                BBOpen t   -> do
-                  modify (\st -> st{ stack = t : st.stack })
-                  go tail (level+1)
-                BBClosed t ->
-                  case uncons stack of
-                       Nothing -> return $ Left $ t <> " not pushed"
-                       Just { head : stHead, tail : stTail } -> do
-                           let
-                            beneath = filter (\(Tuple l v) -> l < level) saccum
-                            at_or_above = filter (\(Tuple l v) -> l >= level) saccum
-                            new = runBBCode stHead (L.reverse $ map snd at_or_above) bmap
-                           case new of
-                             Left err -> return $ Left err
-                             Right new' -> do
-                               if L.null stTail
-                                  then do
-                                    modify (\st -> st{ accum = new' : st.accum, stack = stTail })
-                                    go tail (level-1)
-                                  else do
-                                    modify (\st -> st{ saccum = (Tuple level new' : beneath), stack = stTail })
-                                    go tail (level-1)
+      Nothing -> do
+        case stack of
+          Nil -> return $ Right $ reverse accum
+          xs  -> return $ Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
+      Just { head, tail } ->
+        case head of
+
+          BBStr s    -> do
+            if L.null stack
+               then do
+                 modify (\st -> st{ accum = (Text s : st.accum) })
+                 go tail level
+               else do
+                 modify (\st -> st{ saccum = (Tuple level (Text s)) : st.saccum })
+                 go tail level
+
+          BBOpen t   -> do
+            modify (\st -> st{ stack = t : st.stack })
+            go tail (level+1)
+
+          BBClosed t -> do
+            case uncons stack of
+              Nothing -> return $ Left $ t <> " not pushed"
+              Just { head : stHead, tail : stTail } -> do
+                let
+                  beneath = filter (\(Tuple l v) -> l < level) saccum
+                  at_or_above = filter (\(Tuple l v) -> l >= level) saccum
+                  new = runBBCode stHead (L.reverse $ map snd at_or_above) bmap
+                case new of
+                  Left err -> return $ Left err
+                  Right new' -> do
+                    if L.null stTail
+                       then do
+                         modify (\st -> st{ accum = new' : st.accum, stack = stTail })
+                         go tail (level-1)
+                       else do
+                         modify (\st -> st{ saccum = (Tuple level new' : beneath), stack = stTail })
+                         go tail (level-1)
 
 
 

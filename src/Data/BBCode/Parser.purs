@@ -185,7 +185,7 @@ runHR _       = Left "hr error"
 runYoutube :: List BBCode -> Either String BBCode
 runYoutube (Cons (Text url) Nil) = Right $ Youtube url
 runYoutube (Cons _ Nil)          = Left "youtube error: only urls may be wrapped in youtube"
-runYoutube _ = Left "youtube error"
+runYoutube _                     = Left "youtube error"
 
 
 

@@ -237,9 +237,7 @@ parseBBCodeFromTokens' ::
   -> BBCodeMap
   -> List Token
   -> ParseEff (Either String BBDoc)
-parseBBCodeFromTokens' bmap umap cmap toks = do
-  go toks 0
-
+parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
   where
   go :: List Token -> Int -> ParseEff (Either String BBDoc)
   go toks' level = do

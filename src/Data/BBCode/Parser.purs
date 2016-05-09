@@ -173,6 +173,17 @@ runUnderline :: List BBCode -> Either String BBCode
 runUnderline t   = Right $ Underline t
 runUnderline _   = Left "bold error"
 
+runStrike :: List BBCode -> Either String BBCode
+runStrike t   = Right $ Strike t
+runStrike _   = Left "bold error"
+
+-- runSize
+-- runColor
+
+runCenter :: List BBCode -> Either String BBCode
+runCenter t   = Right $ Center t
+runCenter _   = Left "bold error"
+
 runCode :: List BBCode -> Either String BBCode
 runCode _ = Left "not implemented"
 
@@ -199,7 +210,23 @@ defaultBBCodeMap =
     Tuple "b" runBold,
     Tuple "i" runItalic,
     Tuple "u" runUnderline,
+    Tuple "s" runStrike,
+--    Tuple "size" runSize,
+--    Tuple "color" runColor,
+    Tuple "center" runCenter,
+--    Tuple "quote" runQuote,
+--    Tuple "link" runLink,
+--    Tuple "list" runList,
+--    Tuple "ol" runOrdList,
+--    Tuple "ordlist" runOrdList,
+--    Tuple "table" runTable,
+--    Tuple "img" runImage,
     Tuple "youtube" runYoutube
+--    Tuple "vimeo" runVimeo,
+--    Tuple "facebook" runFacebook,
+--    Tuple "instagram" runInstagram,
+--    Tuple "streamable" runStreamable,
+--    Tuple "imgur" runImgur
   ]
 
 
@@ -219,8 +246,7 @@ defaultUnaryBBCodeMap =
 defaultConsumeBBCodeMap :: BBCodeMap
 defaultConsumeBBCodeMap =
   M.fromFoldable [
-    Tuple "code" runCode,
-    Tuple "c" runCode
+    Tuple "code" runCode
   ]
 
 

@@ -162,34 +162,29 @@ runBBCode s doc bmap  =
 
 
 runBold :: List BBCode -> Either String BBCode
-runBold t   = Right $ Bold t
-runBold _   = Left "bold error"
+runBold = runTextSimple Bold "Bold"
 
 runItalic :: List BBCode -> Either String BBCode
-runItalic t   = Right $ Italic t
-runItalic _   = Left "bold error"
+runItalic = runTextSimple Italic "Italic"
 
 runUnderline :: List BBCode -> Either String BBCode
-runUnderline t   = Right $ Underline t
-runUnderline _   = Left "bold error"
+runUnderline = runTextSimple Underline "Underline"
 
 runStrike :: List BBCode -> Either String BBCode
-runStrike t   = Right $ Strike t
-runStrike _   = Left "bold error"
+runStrike = runTextSimple Strike "Strike"
 
 -- runSize
 -- runColor
 
 runCenter :: List BBCode -> Either String BBCode
-runCenter t   = Right $ Center t
-runCenter _   = Left "bold error"
+runCenter = runTextSimple Center "Center"
 
 runCode :: List BBCode -> Either String BBCode
 runCode _ = Left "not implemented"
 
 runHR :: List BBCode -> Either String BBCode
 runHR Nil = Right $ HR
-runHR _       = Left "hr error"
+runHR _   = Left "hr error"
 
 --
 -- TODO FIXME: media needs proper url parsing/verification
@@ -212,6 +207,14 @@ runStreamable = runMedia Streamable "Streamable"
 
 runImgur :: List BBCode -> Either String BBCode
 runImgur = runMedia Imgur "Imgur"
+
+
+-- Helpers
+--
+
+runTextSimple :: (List BBCode -> BBCode) -> String -> List BBCode -> Either String BBCode
+runTextSimple mk _ t  = Right $ mk t
+runTextSimple _ tag _ = Left $ tag <> " error" 
 
 runMedia :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
 runMedia mk _ (Cons (Text url) Nil) = Right $ mk url

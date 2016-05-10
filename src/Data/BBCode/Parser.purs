@@ -196,9 +196,27 @@ runHR _       = Left "hr error"
 --
 
 runYoutube :: List BBCode -> Either String BBCode
-runYoutube (Cons (Text url) Nil) = Right $ Youtube url
-runYoutube (Cons _ Nil)          = Left "youtube error: only urls may be wrapped in youtube"
-runYoutube _                     = Left "youtube error"
+runYoutube = runMedia Youtube "Youtube"
+
+runVimeo :: List BBCode -> Either String BBCode
+runVimeo = runMedia Vimeo "Vimeo"
+
+runFacebook :: List BBCode -> Either String BBCode
+runFacebook = runMedia Facebook "Facebook"
+
+runInstagram :: List BBCode -> Either String BBCode
+runInstagram = runMedia Instagram "Instagram"
+
+runStreamable :: List BBCode -> Either String BBCode
+runStreamable = runMedia Streamable "Streamable"
+
+runImgur :: List BBCode -> Either String BBCode
+runImgur = runMedia Imgur "Imgur"
+
+runMedia :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
+runMedia mk _ (Cons (Text url) Nil) = Right $ mk url
+runMedia _ tag (Cons _ Nil)          = Left $ tag <> " error: only urls may be wrapped in " <> tag
+runMedia _ tag _                     = Left $ tag <> " error"
 
 
 
@@ -221,12 +239,12 @@ defaultBBCodeMap =
 --    Tuple "ordlist" runOrdList,
 --    Tuple "table" runTable,
 --    Tuple "img" runImage,
-    Tuple "youtube" runYoutube
---    Tuple "vimeo" runVimeo,
---    Tuple "facebook" runFacebook,
---    Tuple "instagram" runInstagram,
---    Tuple "streamable" runStreamable,
---    Tuple "imgur" runImgur
+    Tuple "youtube" runYoutube,
+    Tuple "vimeo" runVimeo,
+    Tuple "facebook" runFacebook,
+    Tuple "instagram" runInstagram,
+    Tuple "streamable" runStreamable,
+    Tuple "imgur" runImgur
   ]
 
 

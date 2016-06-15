@@ -1,4 +1,6 @@
 module Data.BBCode.HTML (
+  runBBCodeToHTML,
+  runBBCodeToHTMLWith,
   bbcodeToHTML
 ) where
 
@@ -10,6 +12,7 @@ import Data.List                       as L
 import Data.List                       (List(..))
 import Data.Maybe                      (Maybe(..))
 import Data.Map                        as M
+import Data.Tuple                      (fst)
 
 import Control.Monad.RWS
 import Control.Monad.Reader
@@ -25,6 +28,17 @@ import Halogen.Themes.Bootstrap3       as B
 import Prelude                         (id, show, map, bind, pure, (<$>), (<*>), ($), (<>))
 
 import Data.BBCode.Types
+
+
+
+runBBCodeToHTML :: List BBCode -> Array (HTML _ _)
+runBBCodeToHTML = runBBCodeToHTMLWith defaultParseReader
+
+
+
+runBBCodeToHTMLWith :: ParseReader -> List BBCode -> Array (HTML _ _)
+runBBCodeToHTMLWith parse_reader codes =
+  fst $ evalRWS (bbcodeToHTML codes) parse_reader defaultParseState
 
 
 

@@ -168,8 +168,8 @@ parseTokens' s = parseTokens s tokens
 
 
 
-runBBCode :: TagName -> Maybe Parameters -> List BBCode -> BBCodeMap -> Either ErrorMsg BBCode
-runBBCode tag params doc bmap  =
+runBBCode :: Maybe Parameters -> TagName -> List BBCode -> BBCodeMap -> Either ErrorMsg BBCode
+runBBCode params tag doc bmap  =
   case M.lookup tag bmap of
        Nothing   -> Left $ tag <> " not found"
        Just bbFn -> bbFn params doc
@@ -204,7 +204,11 @@ runQuote :: BBCodeFn
 runQuote = runTextSimple (Quote Nothing) "Quote"
 
 runLink :: BBCodeFn
-runLink = runRaw (Link Nothing) "Link"
+runLink m_params (Cons (Text s) Nil) =
+  case m_params of
+       Nothing   -> Right $ Link Nothing s
+       Just url  -> Right $ Link (Just s) url
+runLink _ _ = Left $ "Link" <> " error"
 
 runPre :: BBCodeFn
 runPre = runRaw Pre "Pre"
@@ -361,8 +365,8 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
 
   try_maps params tag =
     case M.lookup tag bmap, M.lookup tag cmap of
-         Just bmap_fn, Nothing -> \xs -> runBBCode tag params xs bmap
-         Nothing, Just cmap_fn -> \xs -> runBBCode tag params xs cmap
+         Just bmap_fn, Nothing -> \xs -> runBBCode params tag xs bmap
+         Nothing, Just cmap_fn -> \xs -> runBBCode params tag xs cmap
          -- TODO FIXME: need a user supplied FN to handle errors, this is what runBBCode was for; but not anymore
          _, _                  -> \xs -> Right $ Text tag
 
@@ -399,7 +403,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
             -- 3. a normal bbcode operator which has an open tag, content, and a closing tag
             if M.member tag umap
                then do
-                 case (runBBCode tag params Nil umap) of
+                 case (runBBCode params tag Nil umap) of
                    Left err   -> return $ Left err
                    Right new' -> do
                      modify (\st -> st{ accum = (new' : st.accum) })

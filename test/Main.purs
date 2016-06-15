@@ -168,6 +168,13 @@ main = runTest do
       (Right (Cons (Text("I am the ")) (Cons (Bold(Cons (Text("best")) (Nil))) (Cons (Text(" man, I ")) (Cons (Bold(Cons (Text("deed")) (Nil))) (Cons (Text(" it. ")) (Cons (Bold(Cons (Text("yup")) (Nil))) (Nil))))))))
       $ parseBBCode "I am the [b]best[/b] man, I [b]deed[/b] it. [b]yup[/b]"
 
+    Assert.equal
+      (Right $ Cons (Link (Just "name") "someurl") Nil)
+      $ parseBBCode "[url=someurl]name[/url]"
+
+--    Assert.equal
+--      (Right $ Cons ..
+--      $ parseBBCode "[quote author=adarqui]hello[/quote]"
 
 
 

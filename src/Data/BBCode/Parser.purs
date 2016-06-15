@@ -159,18 +159,18 @@ parseTokens' s = parseTokens s tokens
 
 
 runBBCode :: String -> List BBCode -> BBCodeMap -> Either String BBCode
-runBBCode s doc bmap  =
-  case M.lookup s bmap of
-       Nothing -> Left $ s <> " not found"
-       Just v  -> v doc
+runBBCode tag doc bmap  =
+  case M.lookup tag bmap of
+       Nothing   -> Left $ tag <> " not found"
+       Just bbFn -> bbFn doc
 
 
 
 runBBCode' :: String -> List BBCode -> BBCodeMap -> Either String BBCode
-runBBCode' s doc bmap  =
-  case M.lookup s bmap of
-       Nothing -> Right $ Text s
-       Just v  -> v doc
+runBBCode' tag doc bmap  =
+  case M.lookup tag bmap of
+       Nothing   -> Right $ Text tag
+       Just bbFn -> bbFn doc
 
 
 
@@ -249,7 +249,8 @@ runTextSimple _ tag Nil = Left $ tag <> " error"
 runTextSimple mk _ t    = Right $ mk t
 
 runRaw :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
-runRaw mk t _ = Right $ mk t
+runRaw mk _ (Cons (Text raw) Nil) = Right $ mk raw
+runRaw _ tag _                    = Left $ tag <> " error"
 
 runMedia :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
 runMedia mk _ (Cons (Text url) Nil) = Right $ mk url
@@ -310,11 +311,6 @@ defaultConsumeBBCodeMap =
 
 
 
-parseBBCodeFromTokens :: (String -> List BBCode -> BBCodeMap -> Either String BBCode) -> List Token -> ParseEff (Either String BBDoc)
-parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap defaultUnaryBBCodeMap defaultConsumeBBCodeMap
-
-
-
 -- | TODO FIXME: worst function ever.. my brain is not working
 --
 parseTextAndNewlines :: String -> List BBCode
@@ -339,6 +335,11 @@ parseTextAndNewlines = go Nil
 
 
 
+parseBBCodeFromTokens :: (String -> List BBCode -> BBCodeMap -> Either String BBCode) -> List Token -> ParseEff (Either String BBDoc)
+parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap defaultUnaryBBCodeMap defaultConsumeBBCodeMap
+
+
+
 parseBBCodeFromTokens' ::
      BBCodeMap
   -> BBCodeMap
@@ -348,6 +349,14 @@ parseBBCodeFromTokens' ::
   -> ParseEff (Either String BBDoc)
 parseBBCodeFromTokens' bmap umap cmap run_bbcode toks = go toks 0
   where
+
+  try_maps tag =
+    case M.lookup tag bmap, M.lookup tag cmap of
+         Just bmap_fn, Nothing -> \xs -> run_bbcode tag xs bmap
+         Nothing, Just cmap_fn -> \xs -> run_bbcode tag xs cmap
+         -- TODO FIXME: need a user supplied FN to handle errors, this is what run_bbcode was for; but not anymore
+         _, _                  -> \xs -> Right $ Text tag
+
   go :: List Token -> Int -> ParseEff (Either String BBDoc)
   go toks' level = do
 
@@ -397,8 +406,9 @@ parseBBCodeFromTokens' bmap umap cmap run_bbcode toks = go toks 0
                 let
                   beneath = filter (\(Tuple l v) -> l < level) saccum
                   at_or_above = filter (\(Tuple l v) -> l >= level) saccum
-                  new = run_bbcode stHead (L.reverse $ map snd at_or_above) bmap
-                case new of
+--                  new = run_bbcode stHead (L.reverse $ map snd at_or_above) bmap
+--                  which_map = try_maps stHead
+                case (try_maps stHead (L.reverse $ map snd at_or_above)) of
                   Left err -> return $ Left err
                   Right new' -> do
                     if L.null stTail

@@ -85,11 +85,14 @@ data BBCode
   | Size       BBSize  (List BBCode)
   | Color      BBColor (List BBCode)
   | Center     (List BBCode)
+  | AlignLeft  (List BBCode)
+  | AlignRight (List BBCode)
   | Quote      (Maybe QuoteAuthor) (List BBCode)
   | Link       (Maybe LinkName) LinkURL
   | List       BBList
   | OrdList    BBList
   | Table      BBTable
+  | Pre        String
   | Code       String
   | Text       String
   | Image      (Maybe ImageHeight) (Maybe ImageWidth) MediaURL

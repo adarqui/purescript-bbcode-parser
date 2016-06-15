@@ -6,10 +6,14 @@ module Data.BBCode.Parser (
   tokens,
   concatTokens,
   concatBBStr,
+  runBBCode,
+  runBBCode',
   parseTokens,
   parseTokens',
   parseBBCodeFromTokens,
-  parseBBCode
+  parseBBCodeFromTokens',
+  parseBBCode,
+  parseBBCode'
 ) where
 
 
@@ -162,6 +166,14 @@ runBBCode s doc bmap  =
 
 
 
+runBBCode' :: String -> List BBCode -> BBCodeMap -> Either String BBCode
+runBBCode' s doc bmap  =
+  case M.lookup s bmap of
+       Nothing -> Right $ Text s
+       Just v  -> v doc
+
+
+
 runBold :: List BBCode -> Either String BBCode
 runBold = runTextSimple Bold "Bold"
 
@@ -179,6 +191,15 @@ runStrike = runTextSimple Strike "Strike"
 
 runCenter :: List BBCode -> Either String BBCode
 runCenter = runTextSimple Center "Center"
+
+runAlignLeft :: List BBCode -> Either String BBCode
+runAlignLeft = runTextSimple AlignLeft "Left"
+
+runAlignRight :: List BBCode -> Either String BBCode
+runAlignRight = runTextSimple AlignRight "Right"
+
+runPre :: List BBCode -> Either String BBCode
+runPre _ = Left "not implemented"
 
 runCode :: List BBCode -> Either String BBCode
 runCode _ = Left "not implemented"
@@ -219,7 +240,7 @@ runImgur = runMedia Imgur "Imgur"
 
 runTextSimple :: (List BBCode -> BBCode) -> String -> List BBCode -> Either String BBCode
 runTextSimple mk _ t  = Right $ mk t
-runTextSimple _ tag _ = Left $ tag <> " error" 
+runTextSimple _ tag _ = Left $ tag <> " error"
 
 runMedia :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
 runMedia mk _ (Cons (Text url) Nil) = Right $ mk url
@@ -240,6 +261,8 @@ defaultBBCodeMap =
 --    Tuple "size" runSize,
 --    Tuple "color" runColor,
     Tuple "center" runCenter,
+    Tuple "left" runAlignLeft,
+    Tuple "right" runAlignRight,
 --    Tuple "quote" runQuote,
 --    Tuple "link" runLink,
 --    Tuple "list" runList,
@@ -272,12 +295,13 @@ defaultUnaryBBCodeMap =
 defaultConsumeBBCodeMap :: BBCodeMap
 defaultConsumeBBCodeMap =
   M.fromFoldable [
+    Tuple "pre" runPre,
     Tuple "code" runCode
   ]
 
 
 
-parseBBCodeFromTokens :: List Token -> ParseEff (Either String BBDoc)
+parseBBCodeFromTokens :: (String -> List BBCode -> BBCodeMap -> Either String BBCode) -> List Token -> ParseEff (Either String BBDoc)
 parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap defaultUnaryBBCodeMap defaultConsumeBBCodeMap
 
 
@@ -310,9 +334,10 @@ parseBBCodeFromTokens' ::
      BBCodeMap
   -> BBCodeMap
   -> BBCodeMap
+  -> (String -> List BBCode -> BBCodeMap -> Either String BBCode)
   -> List Token
   -> ParseEff (Either String BBDoc)
-parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
+parseBBCodeFromTokens' bmap umap cmap run_bbcode toks = go toks 0
   where
   go :: List Token -> Int -> ParseEff (Either String BBDoc)
   go toks' level = do
@@ -347,7 +372,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
             -- 3. a normal bbcode operator which has an open tag, content, and a closing tag
             if M.member t umap
                then do
-                 case (runBBCode t Nil umap) of
+                 case (run_bbcode t Nil umap) of
                    Left err   -> return $ Left err
                    Right new' -> do
                      modify (\st -> st{ accum = (new' : st.accum) })
@@ -363,7 +388,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
                 let
                   beneath = filter (\(Tuple l v) -> l < level) saccum
                   at_or_above = filter (\(Tuple l v) -> l >= level) saccum
-                  new = runBBCode stHead (L.reverse $ map snd at_or_above) bmap
+                  new = run_bbcode stHead (L.reverse $ map snd at_or_above) bmap
                 case new of
                   Left err -> return $ Left err
                   Right new' -> do
@@ -381,6 +406,16 @@ parseBBCode :: String -> Either String (List BBCode)
 parseBBCode s =
   case toks of
        Left s   -> Left s
-       Right bb -> fst $ evalRWS (parseBBCodeFromTokens bb) unit defaultParseState
+       Right bb -> fst $ evalRWS (parseBBCodeFromTokens runBBCode bb) unit defaultParseState
+  where
+  toks = parseTokens' s
+
+
+
+parseBBCode' :: String -> Either String (List BBCode)
+parseBBCode' s =
+  case toks of
+       Left s   -> Left s
+       Right bb -> fst $ evalRWS (parseBBCodeFromTokens runBBCode' bb) unit defaultParseState
   where
   toks = parseTokens' s

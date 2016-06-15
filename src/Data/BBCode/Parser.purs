@@ -334,7 +334,7 @@ parseTextAndNewlines = go Nil
 
 
 
-parseBBCodeFromTokens :: (String -> List BBCode -> BBCodeMap -> Either String BBCode) -> List Token -> ParseEff (Either String BBDoc)
+parseBBCodeFromTokens :: List Token -> ParseEff (Either String BBDoc)
 parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap defaultUnaryBBCodeMap defaultConsumeBBCodeMap
 
 
@@ -343,17 +343,16 @@ parseBBCodeFromTokens' ::
      BBCodeMap
   -> BBCodeMap
   -> BBCodeMap
-  -> (String -> List BBCode -> BBCodeMap -> Either String BBCode)
   -> List Token
   -> ParseEff (Either String BBDoc)
-parseBBCodeFromTokens' bmap umap cmap run_bbcode toks = go toks 0
+parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
   where
 
   try_maps tag =
     case M.lookup tag bmap, M.lookup tag cmap of
-         Just bmap_fn, Nothing -> \xs -> run_bbcode tag xs bmap
-         Nothing, Just cmap_fn -> \xs -> run_bbcode tag xs cmap
-         -- TODO FIXME: need a user supplied FN to handle errors, this is what run_bbcode was for; but not anymore
+         Just bmap_fn, Nothing -> \xs -> runBBCode tag xs bmap
+         Nothing, Just cmap_fn -> \xs -> runBBCode tag xs cmap
+         -- TODO FIXME: need a user supplied FN to handle errors, this is what runBBCode was for; but not anymore
          _, _                  -> \xs -> Right $ Text tag
 
   go :: List Token -> Int -> ParseEff (Either String BBDoc)
@@ -389,7 +388,7 @@ parseBBCodeFromTokens' bmap umap cmap run_bbcode toks = go toks 0
             -- 3. a normal bbcode operator which has an open tag, content, and a closing tag
             if M.member t umap
                then do
-                 case (run_bbcode t Nil umap) of
+                 case (runBBCode t Nil umap) of
                    Left err   -> return $ Left err
                    Right new' -> do
                      modify (\st -> st{ accum = (new' : st.accum) })
@@ -427,6 +426,6 @@ parseBBCodeWith :: ParseReader -> String -> Either String (List BBCode)
 parseBBCodeWith parse_reader s =
   case toks of
        Left s   -> Left s
-       Right bb -> fst $ evalRWS (parseBBCodeFromTokens runBBCode bb) parse_reader defaultParseState
+       Right bb -> fst $ evalRWS (parseBBCodeFromTokens bb) parse_reader defaultParseState
   where
   toks = parseTokens' s

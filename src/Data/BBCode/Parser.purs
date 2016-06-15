@@ -30,6 +30,7 @@ import Data.Array (many)
 import Data.Map as M
 import Data.Maybe
 import Data.String hiding (uncons)
+import Data.String as String
 import Data.Tuple
 import Elm.List as ElmL
 import Prelude -- (Monad, Functor, bind, return, (<$>), (+))
@@ -182,6 +183,10 @@ runCenter = runTextSimple Center "Center"
 runCode :: List BBCode -> Either String BBCode
 runCode _ = Left "not implemented"
 
+runNL :: List BBCode -> Either String BBCode
+runNL Nil = Right $ NL
+runNL _   = Left $ "nl error"
+
 runHR :: List BBCode -> Either String BBCode
 runHR Nil = Right $ HR
 runHR _   = Left "hr error"
@@ -277,6 +282,30 @@ parseBBCodeFromTokens = parseBBCodeFromTokens' defaultBBCodeMap defaultUnaryBBCo
 
 
 
+-- | TODO FIXME: worst function ever.. my brain is not working
+--
+parseTextAndNewlines :: String -> List BBCode
+parseTextAndNewlines = go Nil
+  where
+  go acc "" = acc
+  go acc s  =
+    let
+      str    = String.takeWhile (\c -> c /= '\r' && c /= '\n') s
+      nl     = if (String.length str == 0)
+                  then String.length $ String.takeWhile (\c -> c == '\r' || c == '\n') s
+                  else 0
+      rest   = if (nl > 0)
+                  then String.drop nl s
+                  else String.drop (String.length str) s
+    in
+      if (nl > 0)
+         then
+           go (replicate nl NL <> acc) rest
+         else
+           go (Text str : acc) rest
+
+
+
 parseBBCodeFromTokens' ::
      BBCodeMap
   -> BBCodeMap
@@ -301,12 +330,14 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
         case head of
 
           BBStr s    -> do
+            let
+              text_and_newlines = parseTextAndNewlines s
             if L.null stack
                then do
-                 modify (\st -> st{ accum = (Text s : st.accum) })
+                 modify (\st -> st{ accum = text_and_newlines <> st.accum })
                  go tail level
                else do
-                 modify (\st -> st{ saccum = (Tuple level (Text s)) : st.saccum })
+                 modify (\st -> st{ saccum = (map (Tuple level) text_and_newlines) <> st.saccum })
                  go tail level
 
           BBOpen t   -> do
@@ -338,7 +369,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
                   Right new' -> do
                     if L.null stTail
                        then do
-                         modify (\st -> st{ accum = new' : st.accum, stack = stTail })
+                         modify (\st -> st{ accum = new' : st.accum, stack = stTail, saccum = Nil :: (List (Tuple Int BBCode)) })
                          go tail (level-1)
                        else do
                          modify (\st -> st{ saccum = (Tuple level new' : beneath), stack = stTail })

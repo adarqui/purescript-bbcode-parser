@@ -12,6 +12,8 @@ import Data.BBCode.Types
 import Halogen                         (ComponentHTML, HTML)
 import Halogen.HTML.Indexed            as H
 import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.CSS.Indexed        as CSS
+import CSS.Text                        as CSS
 import Halogen.Themes.Bootstrap3       as B
 import Prelude                         (id, show, map, ($), (<>))
 
@@ -30,7 +32,7 @@ codeToHTML tag =
   case tag of
        Bold xs         -> H.strong_ $ bbcodeToHTML xs
        Italic xs       -> H.em_ $ bbcodeToHTML xs
-       Underline xs    -> H.span [] $ bbcodeToHTML xs -- <span style="text-decoration: underline;">hello</span>
+       Underline xs    -> H.span [CSS.style $ CSS.textDecoration CSS.underline] $ bbcodeToHTML xs
        Strike xs       -> H.del_ $ bbcodeToHTML xs
        Size sz xs      -> H.span [] $ bbcodeToHTML xs -- <span style="font-size: 9px;">Hello</span>
        Color c xs      -> H.span [] $ bbcodeToHTML xs -- <span style="color: red;">Hello</span>

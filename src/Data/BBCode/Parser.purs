@@ -198,11 +198,14 @@ runAlignLeft = runTextSimple AlignLeft "Left"
 runAlignRight :: List BBCode -> Either String BBCode
 runAlignRight = runTextSimple AlignRight "Right"
 
+runQuote :: List BBCode -> Either String BBCode
+runQuote = runTextSimple (Quote Nothing) "Quote"
+
 runPre :: List BBCode -> Either String BBCode
-runPre _ = Left "not implemented"
+runPre = runRaw Pre "Pre"
 
 runCode :: List BBCode -> Either String BBCode
-runCode _ = Left "not implemented"
+runCode = runRaw Code "Code"
 
 runNL :: List BBCode -> Either String BBCode
 runNL Nil = Right $ NL
@@ -239,8 +242,11 @@ runImgur = runMedia Imgur "Imgur"
 --
 
 runTextSimple :: (List BBCode -> BBCode) -> String -> List BBCode -> Either String BBCode
-runTextSimple mk _ t  = Right $ mk t
-runTextSimple _ tag _ = Left $ tag <> " error"
+runTextSimple _ tag Nil = Left $ tag <> " error"
+runTextSimple mk _ t    = Right $ mk t
+
+runRaw :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
+runRaw mk t _ = Right $ mk t
 
 runMedia :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
 runMedia mk _ (Cons (Text url) Nil) = Right $ mk url
@@ -263,7 +269,7 @@ defaultBBCodeMap =
     Tuple "center" runCenter,
     Tuple "left" runAlignLeft,
     Tuple "right" runAlignRight,
---    Tuple "quote" runQuote,
+    Tuple "quote" runQuote,
 --    Tuple "link" runLink,
 --    Tuple "list" runList,
 --    Tuple "ol" runOrdList,

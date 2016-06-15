@@ -93,7 +93,7 @@ data BBCode
   | OrdList    BBList
   | Table      BBTable
   | Pre        String
-  | Code       String
+  | Code       (Maybe String) String
   | Text       String
   | Image      (Maybe ImageHeight) (Maybe ImageWidth) MediaURL
   | Youtube    MediaURL
@@ -107,20 +107,23 @@ data BBCode
   | None
 
 instance bbcodeShow :: Show BBCode where
-  show (Bold t)      = "Bold("<>show t<>")"
-  show (Italic t)    = "Italic("<>show t<>")"
-  show (Underline t) = "Underline("<>show t<>")"
-  show (Strike t)    = "Strike("<>show t<>")"
-  show (Size _ t)    = "Size("<>show t<>")"
-  show (Color _ t)   = "Color("<>show t<>")"
-  show (Center _)    = "Center"
-  show (Quote _ _)   = "Quote"
-  show (Link _ _)    = "Link"
-  show (List _)      = "List"
-  show (OrdList _)   = "OrdList"
-  show (Table _)     = "Table"
-  show (Code t)      = "Code("<>show t<>")"
-  show (Text t)      = "Text("<>t<>")"
+  show (Bold t)          = "Bold("<>show t<>")"
+  show (Italic t)        = "Italic("<>show t<>")"
+  show (Underline t)     = "Underline("<>show t<>")"
+  show (Strike t)        = "Strike("<>show t<>")"
+  show (Size _ t)        = "Size("<>show t<>")"
+  show (Color _ t)       = "Color("<>show t<>")"
+  show (Center _)        = "Center"
+  show (AlignLeft _)     = "Left"
+  show (AlignRight _)    = "Right"
+  show (Quote _ _)       = "Quote"
+  show (Link _ _)        = "Link"
+  show (List _)          = "List"
+  show (OrdList _)       = "OrdList"
+  show (Table _)         = "Table"
+  show (Pre t)           = "Pre("<>show t<>")"
+  show (Code lang t)     = "Code("<>show lang<>","<>show t<>")"
+  show (Text t)          = "Text("<>t<>")"
 
   show (Image mh mw url) = "Image"
   show (Youtube url)     = "Youtube("<>url<>")"
@@ -130,10 +133,10 @@ instance bbcodeShow :: Show BBCode where
   show (Streamable url)  = "Streamable("<>url<>")"
   show (Imgur url)       = "Imgur("<>url<>")"
 
-  show HR            = "HR"
-  show NL            = "NL"
-  show None          = "None"
-  show _             = "Unknown"
+  show HR                = "HR"
+  show NL                = "NL"
+  show None              = "None"
+  show _                 = "Unknown"
 
 instance bbcodeEq :: Eq BBCode where
   eq (Bold t1)      (Bold t2)      = t1 == t2
@@ -143,12 +146,14 @@ instance bbcodeEq :: Eq BBCode where
   eq (Size s1 t1)   (Size s2 t2)   = s1 == s2 && t1 == t2
   eq (Color c1 t1)  (Color c2 t2)  = c1 == c2 && t1 == t2
   eq (Center t1)    (Center t2)    = t1 == t2
+  eq (AlignLeft t1) (AlignRight t2)= t1 == t2
   eq (Quote a1 t1)  (Quote a2 t2)  = a1 == a2 && t1 == t2
   eq (Link n1 t1)   (Link n2 t2)   = n1 == n2 && t1 == t2
   eq (List t1)      (List t2)      = t1 == t2
   eq (OrdList t1)   (OrdList t2)   = t1 == t2
   eq (Table t1)     (Table t2)     = t1 == t2
-  eq (Code t1)      (Code t2)      = t1 == t2
+  eq (Pre t1)       (Pre t2)       = t1 == t2
+  eq (Code l1 t1)   (Code l2 t2)   = l1 == l2 && t1 == t2
   eq (Text t1)      (Text t2)      = t1 == t2
 
   eq (Image mh1 mw1 url1 ) (Image mh2 mw2 url2) = mh1 == mh2 && mw1 == mw2 && url1 == url2

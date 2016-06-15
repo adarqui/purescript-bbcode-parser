@@ -205,7 +205,7 @@ runPre :: List BBCode -> Either String BBCode
 runPre = runRaw Pre "Pre"
 
 runCode :: List BBCode -> Either String BBCode
-runCode = runRaw Code "Code"
+runCode = runRaw (Code Nothing) "Code"
 
 runNL :: List BBCode -> Either String BBCode
 runNL Nil = Right $ NL
@@ -236,6 +236,9 @@ runStreamable = runMedia Streamable "Streamable"
 
 runImgur :: List BBCode -> Either String BBCode
 runImgur = runMedia Imgur "Imgur"
+
+runImage :: List BBCode -> Either String BBCode
+runImage = runMedia (Image Nothing Nothing) "Image"
 
 
 -- Helpers
@@ -275,7 +278,7 @@ defaultBBCodeMap =
 --    Tuple "ol" runOrdList,
 --    Tuple "ordlist" runOrdList,
 --    Tuple "table" runTable,
---    Tuple "img" runImage,
+    Tuple "img" runImage,
     Tuple "youtube" runYoutube,
     Tuple "vimeo" runVimeo,
     Tuple "facebook" runFacebook,

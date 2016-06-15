@@ -7,6 +7,10 @@ module Data.BBCode.Types (
   Token (..),
   flattenTokens,
   BBCodeMap,
+  BBCodeFn,
+  TagName,
+  Parameters,
+  ErrorMsg,
   BBDoc (..),
   BBCode (..),
   BBSize (..),
@@ -43,7 +47,7 @@ import Prelude           (Unit, class Show, show, class Eq, map, (<>), (==), (<<
 
 type ParseState = {
   accum  :: List BBCode,
-  stack  :: List String,
+  stack  :: List (Tuple (Maybe Parameters) TagName),
   saccum :: List (Tuple Int BBCode)
 }
 
@@ -72,8 +76,8 @@ type ParseEff = RWS ParseReader Unit ParseState
 
 
 data Token
-  = BBOpen   (Maybe String) String
-  | BBClosed String
+  = BBOpen   (Maybe Parameters) TagName
+  | BBClosed TagName
   | BBStr    String
 
 instance tokenShow :: Show Token where
@@ -93,7 +97,12 @@ flattenTokens = foldl (<>) "" <<< intersperse "," <<< map show
 
 
 
-type BBCodeMap = M.Map String (List BBCode -> Either String BBCode)
+type BBCodeMap = M.Map TagName BBCodeFn
+
+type BBCodeFn   = (Maybe Parameters -> List BBCode -> Either ErrorMsg BBCode)
+type TagName    = String
+type Parameters = String
+type ErrorMsg   = String
 
 
 

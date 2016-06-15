@@ -168,102 +168,102 @@ parseTokens' s = parseTokens s tokens
 
 
 
-runBBCode :: String -> List BBCode -> BBCodeMap -> Either String BBCode
-runBBCode tag doc bmap  =
+runBBCode :: TagName -> Maybe Parameters -> List BBCode -> BBCodeMap -> Either ErrorMsg BBCode
+runBBCode tag params doc bmap  =
   case M.lookup tag bmap of
        Nothing   -> Left $ tag <> " not found"
-       Just bbFn -> bbFn doc
+       Just bbFn -> bbFn params doc
 
 
 
-runBold :: List BBCode -> Either String BBCode
+runBold :: BBCodeFn
 runBold = runTextSimple Bold "Bold"
 
-runItalic :: List BBCode -> Either String BBCode
+runItalic :: BBCodeFn
 runItalic = runTextSimple Italic "Italic"
 
-runUnderline :: List BBCode -> Either String BBCode
+runUnderline :: BBCodeFn
 runUnderline = runTextSimple Underline "Underline"
 
-runStrike :: List BBCode -> Either String BBCode
+runStrike :: BBCodeFn
 runStrike = runTextSimple Strike "Strike"
 
 -- runSize
 -- runColor
 
-runCenter :: List BBCode -> Either String BBCode
+runCenter :: BBCodeFn
 runCenter = runTextSimple Center "Center"
 
-runAlignLeft :: List BBCode -> Either String BBCode
+runAlignLeft :: BBCodeFn
 runAlignLeft = runTextSimple AlignLeft "Left"
 
-runAlignRight :: List BBCode -> Either String BBCode
+runAlignRight :: BBCodeFn
 runAlignRight = runTextSimple AlignRight "Right"
 
-runQuote :: List BBCode -> Either String BBCode
+runQuote :: BBCodeFn
 runQuote = runTextSimple (Quote Nothing) "Quote"
 
-runLink :: List BBCode -> Either String BBCode
+runLink :: BBCodeFn
 runLink = runRaw (Link Nothing) "Link"
 
-runPre :: List BBCode -> Either String BBCode
+runPre :: BBCodeFn
 runPre = runRaw Pre "Pre"
 
-runCode :: List BBCode -> Either String BBCode
+runCode :: BBCodeFn
 runCode = runRaw (Code Nothing) "Code"
 
-runMove :: List BBCode -> Either String BBCode
+runMove :: BBCodeFn
 runMove = runTextSimple Move "Move"
 
-runNL :: List BBCode -> Either String BBCode
-runNL Nil = Right $ NL
-runNL _   = Left $ "nl error"
+runNL :: BBCodeFn
+runNL _ Nil = Right $ NL
+runNL _ _   = Left $ "nl error"
 
-runHR :: List BBCode -> Either String BBCode
-runHR Nil = Right $ HR
-runHR _   = Left "hr error"
+runHR :: BBCodeFn
+runHR _ Nil = Right $ HR
+runHR _ _   = Left "hr error"
 
 --
 -- TODO FIXME: media needs proper url parsing/verification
 --
 
-runYoutube :: List BBCode -> Either String BBCode
+runYoutube :: BBCodeFn
 runYoutube = runMedia Youtube "Youtube"
 
-runVimeo :: List BBCode -> Either String BBCode
+runVimeo :: BBCodeFn
 runVimeo = runMedia Vimeo "Vimeo"
 
-runFacebook :: List BBCode -> Either String BBCode
+runFacebook :: BBCodeFn
 runFacebook = runMedia Facebook "Facebook"
 
-runInstagram :: List BBCode -> Either String BBCode
+runInstagram :: BBCodeFn
 runInstagram = runMedia Instagram "Instagram"
 
-runStreamable :: List BBCode -> Either String BBCode
+runStreamable :: BBCodeFn
 runStreamable = runMedia Streamable "Streamable"
 
-runImgur :: List BBCode -> Either String BBCode
+runImgur :: BBCodeFn
 runImgur = runMedia Imgur "Imgur"
 
-runImage :: List BBCode -> Either String BBCode
+runImage :: BBCodeFn
 runImage = runMedia (Image defaultImageOpts) "Image"
 
 
 -- Helpers
 --
 
-runTextSimple :: (List BBCode -> BBCode) -> String -> List BBCode -> Either String BBCode
-runTextSimple _ tag Nil = Left $ tag <> " error"
-runTextSimple mk _ t    = Right $ mk t
+runTextSimple :: (List BBCode -> BBCode) -> TagName -> Maybe Parameters -> List BBCode -> Either ErrorMsg BBCode
+runTextSimple _ tag _ Nil = Left $ tag <> " error"
+runTextSimple mk _ _ t    = Right $ mk t
 
-runRaw :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
-runRaw mk _ (Cons (Text raw) Nil) = Right $ mk raw
-runRaw _ tag _                    = Left $ tag <> " error"
+runRaw :: (String -> BBCode) -> TagName -> Maybe Parameters -> List BBCode -> Either ErrorMsg BBCode
+runRaw mk _ _ (Cons (Text raw) Nil) = Right $ mk raw
+runRaw _ tag _ _                    = Left $ tag <> " error"
 
-runMedia :: (String -> BBCode) -> String -> List BBCode -> Either String BBCode
-runMedia mk _ (Cons (Text url) Nil) = Right $ mk url
-runMedia _ tag (Cons _ Nil)          = Left $ tag <> " error: only urls may be wrapped in " <> tag
-runMedia _ tag _                     = Left $ tag <> " error"
+runMedia :: (String -> BBCode) -> TagName -> Maybe Parameters -> List BBCode -> Either ErrorMsg BBCode
+runMedia mk _ _ (Cons (Text url) Nil) = Right $ mk url
+runMedia _ tag _ (Cons _ Nil)          = Left $ tag <> " error: only urls may be wrapped in " <> tag
+runMedia _ tag _ _                     = Left $ tag <> " error"
 
 
 
@@ -359,10 +359,10 @@ parseBBCodeFromTokens' ::
 parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
   where
 
-  try_maps tag =
+  try_maps params tag =
     case M.lookup tag bmap, M.lookup tag cmap of
-         Just bmap_fn, Nothing -> \xs -> runBBCode tag xs bmap
-         Nothing, Just cmap_fn -> \xs -> runBBCode tag xs cmap
+         Just bmap_fn, Nothing -> \xs -> runBBCode tag params xs bmap
+         Nothing, Just cmap_fn -> \xs -> runBBCode tag params xs cmap
          -- TODO FIXME: need a user supplied FN to handle errors, this is what runBBCode was for; but not anymore
          _, _                  -> \xs -> Right $ Text tag
 
@@ -376,12 +376,12 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
     case uncons toks' of
       Nothing -> do
         case stack of
-          Nil -> return $ Right $ reverse accum
-          xs  -> return $ Left $ (Elm.String.concat $ ElmL.intersperse " " xs) <> " not closed"
+          Nil                    -> return $ Right $ reverse accum
+          (Cons (Tuple _ tag) _) -> return $ Left $ tag <> " not closed"
       Just { head, tail } ->
         case head of
 
-          BBStr s        -> do
+          BBStr s           -> do
             let
               text_and_newlines = parseTextAndNewlines s
             if L.null stack
@@ -392,30 +392,30 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
                  modify (\st -> st{ saccum = (map (Tuple level) text_and_newlines) <> st.saccum })
                  go tail level
 
-          BBOpen parms t -> do
+          BBOpen params tag -> do
             -- We need to handle things differently based upon whether or not the bbcode is:
             -- 1. a unary operator - no closing tag
             -- 2. a consumer - consumes all other tags until the consumer's closing tag is found
             -- 3. a normal bbcode operator which has an open tag, content, and a closing tag
-            if M.member t umap
+            if M.member tag umap
                then do
-                 case (runBBCode t Nil umap) of
+                 case (runBBCode tag params Nil umap) of
                    Left err   -> return $ Left err
                    Right new' -> do
                      modify (\st -> st{ accum = (new' : st.accum) })
                      go tail level
                else do
-                 modify (\st -> st{ stack = t : st.stack })
+                 modify (\st -> st{ stack = (Tuple params tag) : st.stack })
                  go tail (level+1)
 
-          BBClosed t     -> do
+          BBClosed tag      -> do
             case uncons stack of
-              Nothing -> return $ Left $ t <> " not pushed"
-              Just { head : stHead, tail : stTail } -> do
+              Nothing -> return $ Left $ tag <> " not pushed"
+              Just { head: Tuple params tag, tail : stTail } -> do
                 let
                   beneath = filter (\(Tuple l v) -> l < level) saccum
                   at_or_above = filter (\(Tuple l v) -> l >= level) saccum
-                case (try_maps stHead (L.reverse $ map snd at_or_above)) of
+                case (try_maps params tag (L.reverse $ map snd at_or_above)) of
                   Left err -> return $ Left err
                   Right new' -> do
                     if L.null stTail

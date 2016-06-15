@@ -1,13 +1,18 @@
 module Test.Main where
 
 
-import Data.Either           (Either(..))
-import Data.List             (List(..))
-import Prelude               (bind, ($), (<$>))
-import Test.Unit             (test)
-import Test.Unit.Main        (runTest)
-import Test.Unit.Assert      as Assert
+import Data.Either                     (Either(..))
+import Data.List                       (List(..))
+import Halogen                         (ComponentHTML, HTML)
+import Halogen.HTML.Indexed            as H
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.Themes.Bootstrap3       as B
+import Prelude                         (bind, ($), (<$>))
+import Test.Unit                       (test)
+import Test.Unit.Main                  (runTest)
+import Test.Unit.Assert                as Assert
 
+import Data.BBCode.HTML
 import Data.BBCode.Parser
 import Data.BBCode.Types
 
@@ -133,3 +138,40 @@ main = runTest do
     Assert.equal
       (Right (Cons HR Nil))
       $ parseBBCode "[hr]"
+
+    Assert.equal
+      (Right (Cons NL Nil))
+      $ parseBBCode "\n"
+
+    Assert.equal
+      (Right (Cons NL (Cons NL Nil)))
+      $ parseBBCode "\n\n"
+
+    Assert.equal
+      (Right (Cons (Text "hi") (Cons NL Nil)))
+      $ parseBBCode "hi\n"
+
+    Assert.equal
+      (Right (Cons NL (Cons (Text "hi") Nil)))
+      $ parseBBCode "\nhi"
+
+    Assert.equal
+      (Right (Cons (Text("I am the ")) (Cons (Bold(Cons (Text("best")) (Nil))) (Cons (Text(" man, I ")) (Cons (Bold(Cons (Text("deed")) (Nil))) (Cons (Text(" it. ")) (Cons (Bold(Cons (Text("yup")) (Nil))) (Nil))))))))
+      $ parseBBCode "I am the [b]best[/b] man, I [b]deed[/b] it. [b]yup[/b]"
+
+
+
+
+
+-- TODO: No tests yet .. HTML doesn't have an Eq instance etc.
+--
+--  test "BBCode To HTML Tests" do
+--
+--    Assert.equal
+--      (H.div_ [H.text "hello"])
+--      $ bbcodeToHTML $ fromRight $ parseBBCode "hello"
+--
+--
+--
+-- fromRight :: forall a b. Either a b -> b
+-- fromRight (Right b) = b

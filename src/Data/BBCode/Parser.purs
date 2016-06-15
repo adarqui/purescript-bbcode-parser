@@ -66,7 +66,7 @@ openWithParams = do
   r <- manyTill letter (string " " <|> string "=")
   pc <- anyChar
   pr <- manyTill anyChar (string "]")
-  return $ BBOpen (Just (fromCharListToLower $ pc : pr)) (fromCharListToLower $ c : r)
+  return $ BBOpen (Just (fromCharList $ pc : pr)) (fromCharListToLower $ c : r)
 
 
 

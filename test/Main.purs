@@ -169,8 +169,8 @@ main = runTest do
       $ parseBBCode "I am the [b]best[/b] man, I [b]deed[/b] it. [b]yup[/b]"
 
     Assert.equal
-      (Right $ Cons (Link (Just "name") "someurl") Nil)
-      $ parseBBCode "[url=someurl]name[/url]"
+      (Right $ Cons (Link (Just "name") "someUrl") Nil)
+      $ parseBBCode "[url=someUrl]name[/url]"
 
 --    Assert.equal
 --      (Right $ Cons ..

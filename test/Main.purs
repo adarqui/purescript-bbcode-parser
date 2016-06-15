@@ -3,6 +3,7 @@ module Test.Main where
 
 import Data.Either                     (Either(..))
 import Data.List                       (List(..))
+import Data.Maybe                      (Maybe(..))
 import Halogen                         (ComponentHTML, HTML)
 import Halogen.HTML.Indexed            as H
 import Halogen.HTML.Properties.Indexed as P
@@ -28,7 +29,7 @@ main = runTest do
       $ flattenTokens (Cons (BBStr "hi") Nil)
 
     Assert.equal "open(b),str(hi),closed(b)"
-      $ flattenTokens (Cons (BBOpen "b") (Cons (BBStr "hi") (Cons (BBClosed "b") Nil)))
+      $ flattenTokens (Cons (BBOpen Nothing "b") (Cons (BBStr "hi") (Cons (BBClosed "b") Nil)))
 
     Assert.equal (Cons (BBStr "ping pong") Nil)
       $ concatTokens (Cons (BBStr "ping") (Cons (BBStr " ") (Cons (BBStr "pong") Nil)))
@@ -36,8 +37,8 @@ main = runTest do
     Assert.equal (BBStr "ping pong")
       $ concatBBStr (Cons (BBStr "ping") (Cons (BBStr " ") (Cons (BBStr "pong") Nil)))
 
-    Assert.equal (Cons (BBStr "ping") (Cons (BBOpen "b") (Cons (BBStr "pong") Nil)))
-      $ concatTokens (Cons (BBStr "ping") (Cons (BBOpen "b") (Cons (BBStr "pong") Nil)))
+    Assert.equal (Cons (BBStr "ping") (Cons (BBOpen Nothing "b") (Cons (BBStr "pong") Nil)))
+      $ concatTokens (Cons (BBStr "ping") (Cons (BBOpen Nothing "b") (Cons (BBStr "pong") Nil)))
 
 
 
@@ -50,11 +51,11 @@ main = runTest do
     Assert.equal (Right $ Cons (BBStr "[/ b ]") Nil) $ parseTokens' "[/ b ]"
 
     Assert.equal
-      (Right $ Cons (BBOpen "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
+      (Right $ Cons (BBOpen Nothing "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
       $ parseTokens' "[b]hello[/b]"
 
     Assert.equal
-      (Right $ Cons (BBOpen "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
+      (Right $ Cons (BBOpen Nothing "b") (Cons (BBStr "hello") (Cons (BBClosed "b") Nil)))
       $ parseTokens' "[B]hello[/B]"
 
     Assert.equal
@@ -72,6 +73,14 @@ main = runTest do
     Assert.equal
       (Right "open(b),str(a),open(u),str(b),closed(u),str(c)")
       $ flattenTokens <$> parseTokens' "[b]a[u]b[/u]c"
+
+    Assert.equal
+      (Right "open(url, someurl),str(name),closed(url)")
+      $ flattenTokens <$> parseTokens' "[url=someurl]name[/url]"
+
+    Assert.equal
+      (Right "open(quote, author=adarqui),str(hello),closed(quote)")
+      $ flattenTokens <$> parseTokens' "[quote author=adarqui]hello[/quote]"
 
 
 

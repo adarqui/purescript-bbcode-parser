@@ -72,20 +72,21 @@ type ParseEff = RWS ParseReader Unit ParseState
 
 
 data Token
-  = BBOpen   String
+  = BBOpen   (Maybe String) String
   | BBClosed String
   | BBStr    String
 
 instance tokenShow :: Show Token where
-  show (BBOpen s)   = "open("<>toLower s<>")"
-  show (BBClosed s) = "closed("<>toLower s<>")"
-  show (BBStr s)    = "str("<>s<>")"
+  show (BBOpen Nothing s)  = "open("<>toLower s<>")"
+  show (BBOpen (Just p) s) = "open("<>toLower s<>", "<>toLower p<>")"
+  show (BBClosed s)        = "closed("<>toLower s<>")"
+  show (BBStr s)           = "str("<>s<>")"
 
 instance tokenEq :: Eq Token where
-  eq (BBOpen t1)   (BBOpen t2)   = t1 == t2
-  eq (BBClosed t1) (BBClosed t2) = t1 == t2
-  eq (BBStr t1)    (BBStr t2)    = t1 == t2
-  eq _             _             = false
+  eq (BBOpen p1 t1)   (BBOpen p2 t2) = p1 == p2 && t1 == t2
+  eq (BBClosed t1) (BBClosed t2)     = t1 == t2
+  eq (BBStr t1)    (BBStr t2)        = t1 == t2
+  eq _             _                 = false
 
 flattenTokens :: List Token -> String
 flattenTokens = foldl (<>) "" <<< intersperse "," <<< map show

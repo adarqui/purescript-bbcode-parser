@@ -54,8 +54,19 @@ open :: forall m a. (Monad m) => ParserT String m Token
 open = do
   string "["
   c <- letter
-  r <- manyTill anyChar (string "]")
-  return $ BBOpen (fromCharListToLower $ c : r)
+  r <- manyTill letter (string "]")
+  return $ BBOpen Nothing (fromCharListToLower $ c : r)
+
+
+
+openWithParams :: forall m a. (Monad m) => ParserT String m Token
+openWithParams = do
+  string "["
+  c <- letter
+  r <- manyTill letter (string " " <|> string "=")
+  pc <- anyChar
+  pr <- manyTill anyChar (string "]")
+  return $ BBOpen (Just (fromCharListToLower $ pc : pr)) (fromCharListToLower $ c : r)
 
 
 
@@ -83,7 +94,7 @@ catchAll = do
 
 
 token :: forall m a. (Monad m) => ParserT String m Token
-token = try closed <|> try open <|> try str <|> try catchAll
+token = try closed <|> try openWithParams <|> try open <|> try str <|> try catchAll
 
 
 
@@ -370,7 +381,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
       Just { head, tail } ->
         case head of
 
-          BBStr s    -> do
+          BBStr s        -> do
             let
               text_and_newlines = parseTextAndNewlines s
             if L.null stack
@@ -381,7 +392,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
                  modify (\st -> st{ saccum = (map (Tuple level) text_and_newlines) <> st.saccum })
                  go tail level
 
-          BBOpen t   -> do
+          BBOpen parms t -> do
             -- We need to handle things differently based upon whether or not the bbcode is:
             -- 1. a unary operator - no closing tag
             -- 2. a consumer - consumes all other tags until the consumer's closing tag is found
@@ -397,7 +408,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
                  modify (\st -> st{ stack = t : st.stack })
                  go tail (level+1)
 
-          BBClosed t -> do
+          BBClosed t     -> do
             case uncons stack of
               Nothing -> return $ Left $ t <> " not pushed"
               Just { head : stHead, tail : stTail } -> do

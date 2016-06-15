@@ -201,6 +201,9 @@ runAlignRight = runTextSimple AlignRight "Right"
 runQuote :: List BBCode -> Either String BBCode
 runQuote = runTextSimple (Quote Nothing) "Quote"
 
+runLink :: List BBCode -> Either String BBCode
+runLink = runRaw (Link Nothing) "Link"
+
 runPre :: List BBCode -> Either String BBCode
 runPre = runRaw Pre "Pre"
 
@@ -274,7 +277,8 @@ defaultBBCodeMap =
     Tuple "left" runAlignLeft,
     Tuple "right" runAlignRight,
     Tuple "quote" runQuote,
---    Tuple "link" runLink,
+    Tuple "link" runLink,
+    Tuple "url" runLink,
 --    Tuple "list" runList,
 --    Tuple "ol" runOrdList,
 --    Tuple "ordlist" runOrdList,
@@ -406,8 +410,6 @@ parseBBCodeFromTokens' bmap umap cmap run_bbcode toks = go toks 0
                 let
                   beneath = filter (\(Tuple l v) -> l < level) saccum
                   at_or_above = filter (\(Tuple l v) -> l >= level) saccum
---                  new = run_bbcode stHead (L.reverse $ map snd at_or_above) bmap
---                  which_map = try_maps stHead
                 case (try_maps stHead (L.reverse $ map snd at_or_above)) of
                   Left err -> return $ Left err
                   Right new' -> do

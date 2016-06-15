@@ -51,9 +51,10 @@ codeToHTML tag =
 --       Table table
        Pre text             -> H.pre_ [H.text text]
        Code _ code          -> H.pre_ [H.text code]
+       Move xs              -> H.text "[move] is deprecated"
        Text text            -> H.text text
        Image _ _ url        -> H.img [P.src url]
---        Youtube url
+       Youtube url          -> H.iframe [P.src url]
 --        Vimeo url
 --        Facebook url
 --        Instagram url

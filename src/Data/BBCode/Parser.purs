@@ -210,6 +210,9 @@ runPre = runRaw Pre "Pre"
 runCode :: List BBCode -> Either String BBCode
 runCode = runRaw (Code Nothing) "Code"
 
+runMove :: List BBCode -> Either String BBCode
+runMove = runTextSimple Move "Move"
+
 runNL :: List BBCode -> Either String BBCode
 runNL Nil = Right $ NL
 runNL _   = Left $ "nl error"
@@ -283,6 +286,7 @@ defaultBBCodeMap =
 --    Tuple "ol" runOrdList,
 --    Tuple "ordlist" runOrdList,
 --    Tuple "table" runTable,
+    Tuple "move" runMove,
     Tuple "img" runImage,
     Tuple "youtube" runYoutube,
     Tuple "vimeo" runVimeo,

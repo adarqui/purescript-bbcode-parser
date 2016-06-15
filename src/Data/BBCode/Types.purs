@@ -94,6 +94,7 @@ data BBCode
   | Table      BBTable
   | Pre        String
   | Code       (Maybe String) String
+  | Move       (List BBCode)
   | Text       String
   | Image      (Maybe ImageHeight) (Maybe ImageWidth) MediaURL
   | Youtube    MediaURL
@@ -123,6 +124,7 @@ instance bbcodeShow :: Show BBCode where
   show (Table _)         = "Table"
   show (Pre t)           = "Pre("<>show t<>")"
   show (Code lang t)     = "Code("<>show lang<>","<>show t<>")"
+  show (Move t)          = "Move("<>show t<>")"
   show (Text t)          = "Text("<>t<>")"
 
   show (Image mh mw url) = "Image"
@@ -154,6 +156,7 @@ instance bbcodeEq :: Eq BBCode where
   eq (Table t1)     (Table t2)     = t1 == t2
   eq (Pre t1)       (Pre t2)       = t1 == t2
   eq (Code l1 t1)   (Code l2 t2)   = l1 == l2 && t1 == t2
+  eq (Move t1)      (Move t2)      = t1 == t2
   eq (Text t1)      (Text t2)      = t1 == t2
 
   eq (Image mh1 mw1 url1 ) (Image mh2 mw2 url2) = mh1 == mh2 && mw1 == mw2 && url1 == url2

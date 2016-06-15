@@ -7,13 +7,12 @@ module Data.BBCode.Parser (
   concatTokens,
   concatBBStr,
   runBBCode,
-  runBBCode',
   parseTokens,
   parseTokens',
   parseBBCodeFromTokens,
   parseBBCodeFromTokens',
   parseBBCode,
-  parseBBCode'
+  parseBBCodeWith
 ) where
 
 
@@ -166,14 +165,6 @@ runBBCode tag doc bmap  =
 
 
 
-runBBCode' :: String -> List BBCode -> BBCodeMap -> Either String BBCode
-runBBCode' tag doc bmap  =
-  case M.lookup tag bmap of
-       Nothing   -> Right $ Text tag
-       Just bbFn -> bbFn doc
-
-
-
 runBold :: List BBCode -> Either String BBCode
 runBold = runTextSimple Bold "Bold"
 
@@ -244,7 +235,7 @@ runImgur :: List BBCode -> Either String BBCode
 runImgur = runMedia Imgur "Imgur"
 
 runImage :: List BBCode -> Either String BBCode
-runImage = runMedia (Image Nothing Nothing) "Image"
+runImage = runMedia (Image defaultImageOpts) "Image"
 
 
 -- Helpers
@@ -428,19 +419,14 @@ parseBBCodeFromTokens' bmap umap cmap run_bbcode toks = go toks 0
 
 
 parseBBCode :: String -> Either String (List BBCode)
-parseBBCode s =
+parseBBCode = parseBBCodeWith defaultParseReader
+
+
+
+parseBBCodeWith :: ParseReader -> String -> Either String (List BBCode)
+parseBBCodeWith parse_reader s =
   case toks of
        Left s   -> Left s
-       Right bb -> fst $ evalRWS (parseBBCodeFromTokens runBBCode bb) unit defaultParseState
-  where
-  toks = parseTokens' s
-
-
-
-parseBBCode' :: String -> Either String (List BBCode)
-parseBBCode' s =
-  case toks of
-       Left s   -> Left s
-       Right bb -> fst $ evalRWS (parseBBCodeFromTokens runBBCode' bb) unit defaultParseState
+       Right bb -> fst $ evalRWS (parseBBCodeFromTokens runBBCode bb) parse_reader defaultParseState
   where
   toks = parseTokens' s

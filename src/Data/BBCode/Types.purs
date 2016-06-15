@@ -2,6 +2,8 @@ module Data.BBCode.Types (
   ParseEff,
   ParseState,
   defaultParseState,
+  ParseReader,
+  defaultParseReader,
   Token (..),
   flattenTokens,
   BBCodeMap,
@@ -17,7 +19,11 @@ module Data.BBCode.Types (
   LinkName,
   MediaURL,
   ImageHeight,
-  ImageWidth
+  ImageWidth,
+  LinkOpts (..),
+  defaultLinkOpts,
+  ImageOpts (..),
+  defaultImageOpts
 ) where
 
 
@@ -27,24 +33,41 @@ import Data.Either       (Either)
 import Data.Foldable     (foldl)
 import Data.List         (List(..))
 import Data.Map          as M
-import Data.Maybe        (Maybe)
+import Data.Maybe        (Maybe(..))
 import Data.String       (toLower)
 import Data.Tuple        (Tuple)
 import Elm.List          (intersperse)
-import Prelude           (Unit, class Show, show, class Eq, map, (<>), (==), (<<<), (&&), (+), (-))
+import Prelude           (Unit, class Show, show, class Eq, map, (<>), (==), (<<<), (&&), (+), (-), ($))
 
 
 
 type ParseState = {
-  accum :: List BBCode,
-  stack :: List String,
+  accum  :: List BBCode,
+  stack  :: List String,
   saccum :: List (Tuple Int BBCode)
 }
 
 defaultParseState :: ParseState
 defaultParseState = { accum: Nil, stack: Nil, saccum: Nil }
 
-type ParseEff = RWS Unit Unit ParseState
+
+
+type ParseReader = {
+  linkOpts  :: LinkOpts,
+  imageOpts :: ImageOpts,
+  trfm      :: M.Map String (BBCode -> BBCode)
+}
+
+defaultParseReader :: ParseReader
+defaultParseReader = {
+  linkOpts:  defaultLinkOpts,
+  imageOpts: defaultImageOpts,
+  trfm:      M.empty
+}
+
+
+
+type ParseEff = RWS ParseReader Unit ParseState
 
 
 
@@ -96,7 +119,7 @@ data BBCode
   | Code       (Maybe String) String
   | Move       (List BBCode)
   | Text       String
-  | Image      (Maybe ImageHeight) (Maybe ImageWidth) MediaURL
+  | Image      ImageOpts MediaURL
   | Youtube    MediaURL
   | Vimeo      MediaURL
   | Facebook   MediaURL
@@ -127,7 +150,7 @@ instance bbcodeShow :: Show BBCode where
   show (Move t)          = "Move("<>show t<>")"
   show (Text t)          = "Text("<>t<>")"
 
-  show (Image mh mw url) = "Image"
+  show (Image _ url)     = "Image"
   show (Youtube url)     = "Youtube("<>url<>")"
   show (Vimeo url)       = "Vimeo("<>url<>")"
   show (Facebook url)    = "Facebook("<>url<>")"
@@ -159,7 +182,7 @@ instance bbcodeEq :: Eq BBCode where
   eq (Move t1)      (Move t2)      = t1 == t2
   eq (Text t1)      (Text t2)      = t1 == t2
 
-  eq (Image mh1 mw1 url1 ) (Image mh2 mw2 url2) = mh1 == mh2 && mw1 == mw2 && url1 == url2
+  eq (Image opts1 url1 ) (Image opts2 url2)     = opts1 == opts2 && url1 == url2
   eq (Youtube url1) (Youtube url2)              = url1 == url2
   eq (Vimeo url1) (Vimeo url2)                  = url1 == url2
   eq (Facebook url1) (Facebook url2)            = url1 == url2
@@ -231,3 +254,40 @@ type LinkName    = String
 type MediaURL    = String
 type ImageHeight = ImageSize
 type ImageWidth  = ImageSize
+
+
+
+newtype LinkOpts = LinkOpts {
+  linkName :: Maybe String
+}
+
+instance linkOptsEq :: Eq LinkOpts where
+  eq (LinkOpts o1) (LinkOpts o2) = o1.linkName == o2.linkName
+
+defaultLinkOpts :: LinkOpts
+defaultLinkOpts = LinkOpts {
+  linkName: Nothing
+}
+
+defaultSafeLinkOpts :: LinkOpts
+defaultSafeLinkOpts = defaultLinkOpts
+
+newtype ImageOpts = ImageOpts {
+  imageHeight :: Maybe ImageHeight,
+  imageWidth  :: Maybe ImageWidth
+}
+
+instance imageOptsEq :: Eq ImageOpts where
+  eq (ImageOpts o1) (ImageOpts o2) = o1.imageHeight == o2.imageHeight && o1.imageWidth == o2.imageWidth
+
+defaultImageOpts :: ImageOpts
+defaultImageOpts = ImageOpts {
+  imageHeight: Nothing,
+  imageWidth:  Nothing
+}
+
+defaultSafeImageOpts :: ImageOpts
+defaultSafeImageOpts = ImageOpts {
+  imageHeight: Just $ ImagePx 300,
+  imageWidth:  Just $ ImagePx 300
+}

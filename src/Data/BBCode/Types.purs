@@ -24,6 +24,8 @@ module Data.BBCode.Types (
   MediaURL,
   ImageHeight,
   ImageWidth,
+  FontOpts (..),
+  defaultFontOpts,
   LinkOpts (..),
   defaultLinkOpts,
   ImageOpts (..),
@@ -115,6 +117,7 @@ data BBCode
   | Italic     (List BBCode)
   | Underline  (List BBCode)
   | Strike     (List BBCode)
+  | Font       FontOpts (List BBCode)
   | Size       BBSize  (List BBCode)
   | Color      BBColor (List BBCode)
   | Center     (List BBCode)
@@ -145,6 +148,7 @@ instance bbcodeShow :: Show BBCode where
   show (Italic t)        = "Italic("<>show t<>")"
   show (Underline t)     = "Underline("<>show t<>")"
   show (Strike t)        = "Strike("<>show t<>")"
+  show (Font _ t)        = "Font("<>show t<>")"
   show (Size _ t)        = "Size("<>show t<>")"
   show (Color _ t)       = "Color("<>show t<>")"
   show (Center _)        = "Center"
@@ -178,6 +182,7 @@ instance bbcodeEq :: Eq BBCode where
   eq (Italic t1)    (Italic t2)    = t1 == t2
   eq (Underline t1) (Underline t2) = t1 == t2
   eq (Strike t1)    (Strike t2)    = t1 == t2
+  eq (Font o1 t1)   (Font o2 t2)   = o1 == o2 && t1 == t2
   eq (Size s1 t1)   (Size s2 t2)   = s1 == s2 && t1 == t2
   eq (Color c1 t1)  (Color c2 t2)  = c1 == c2 && t1 == t2
   eq (Center t1)    (Center t2)    = t1 == t2
@@ -300,4 +305,18 @@ defaultSafeImageOpts :: ImageOpts
 defaultSafeImageOpts = ImageOpts {
   imageHeight: Just $ ImagePx 300,
   imageWidth:  Just $ ImagePx 300
+}
+
+newtype FontOpts = FontOpts {
+  fontFamily :: Maybe String,
+  fontFaces  :: Array String
+}
+
+instance fontOptsEq :: Eq FontOpts where
+  eq (FontOpts o1) (FontOpts o2) = o1.fontFamily == o2.fontFamily && o1.fontFaces == o2.fontFaces
+
+defaultFontOpts :: FontOpts
+defaultFontOpts = FontOpts {
+  fontFamily: Nothing,
+  fontFaces:  []
 }

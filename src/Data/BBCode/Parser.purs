@@ -188,6 +188,13 @@ runUnderline = runTextSimple Underline "Underline"
 runStrike :: BBCodeFn
 runStrike = runTextSimple Strike "Strike"
 
+runFont :: BBCodeFn
+runFont m_params xs =
+  case m_params of
+       Nothing   -> Right $ Font defaultFontOpts xs
+       Just font -> Right $ Font (FontOpts { fontFamily: Just font, fontFaces: [] }) xs
+       -- TODO FIXME: font faces
+
 -- runSize
 -- runColor
 
@@ -280,6 +287,7 @@ defaultBBCodeMap =
     Tuple "i" runItalic,
     Tuple "u" runUnderline,
     Tuple "s" runStrike,
+    Tuple "font" runFont,
 --    Tuple "size" runSize,
 --    Tuple "color" runColor,
     Tuple "center" runCenter,

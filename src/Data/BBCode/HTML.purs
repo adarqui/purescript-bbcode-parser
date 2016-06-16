@@ -6,6 +6,8 @@ module Data.BBCode.HTML (
 
 
 
+import Control.Monad.RWS
+import Control.Monad.Reader
 import Data.Array                      as A
 import Data.NonEmpty                   as NonEmpty
 import Data.Int                        (toNumber)
@@ -13,10 +15,11 @@ import Data.List                       as L
 import Data.List                       (List(..))
 import Data.Maybe                      (Maybe(..))
 import Data.Map                        as M
-import Data.Tuple                      (fst)
+import Data.StrMap                     as StrM
+import Data.Tuple                      (Tuple(..), fst)
 
-import Control.Monad.RWS
-import Control.Monad.Reader
+import Color                           as Color
+import Color.Scheme.HTML               as Color
 import Halogen                         (ComponentHTML, HTML)
 import Halogen.HTML.Indexed            as H
 import Halogen.HTML.Properties.Indexed as P
@@ -66,7 +69,7 @@ codeToHTML tag = do
        Strike xs            -> H.del_ <$> bbcodeToHTML xs
        Font opts xs         -> runFont opts xs
        Size opts xs         -> runSize opts xs
-       Color c xs           -> H.span [] <$> bbcodeToHTML xs -- <span style="color: red;">Hello</span>
+       Color opts xs        -> runColor opts xs
        Center xs            -> H.center_ <$> bbcodeToHTML xs
        AlignLeft xs         -> H.p [CSS.style $ CSS.textAlign CSS.leftTextAlign] <$> bbcodeToHTML xs
        AlignRight xs        -> H.p [CSS.style $ CSS.textAlign CSS.rightTextAlign] <$> bbcodeToHTML xs
@@ -133,6 +136,57 @@ runFont opts xs = do
               Nothing  -> CSS.sansSerif
               Just fam -> CSS.GenericFontFamily $ CSS.fromString fam)
     pure $ H.span [CSS.style $ CSS.fontFamily opts'.fontFaces (NonEmpty.singleton fam)] html
+
+
+
+
+-- MAJO TODO FIXME: this needs to be in purescript-colors .. as well as maps for other schemes
+-- however.. had major problems building purescript-colors release=0.4.4
+-- odd stuff, 5 AM .. just going to implement this here for now
+-- but i'd love to get this into purescript-colors
+-- gn.
+--
+htmlSchemeMap :: StrM.StrMap Color.Color
+htmlSchemeMap =
+  StrM.fromFoldable [
+    Tuple "silver"  Color.silver
+  , Tuple "gray"    Color.gray
+  , Tuple "maroon"  Color.maroon
+  , Tuple "red"     Color.red
+  , Tuple "purple"  Color.purple
+  , Tuple "fuchsia" Color.fuchsia
+  , Tuple "green"   Color.green
+  , Tuple "lime"    Color.lime
+  , Tuple "olive"   Color.olive
+  , Tuple "yellow"  Color.yellow
+  , Tuple "navy"    Color.navy
+  , Tuple "blue"    Color.blue
+  , Tuple "teal"    Color.teal
+  , Tuple "aqua"    Color.aqua
+  ]
+
+
+
+runColor :: ColorOpts -> List BBCode -> ParseEff (HTML _ _)
+runColor opts xs = do
+  (r :: ParseReader) <- ask
+  let code = (case M.lookup "color" r.trfm of
+              Nothing   -> Color opts xs
+              Just trfm -> trfm (Color opts xs))
+  go code
+  where
+  go (Color (ColorOpts opts') xs) = do
+    html <- bbcodeToHTML xs
+    let color = (case opts'.colorValue of
+               Just (ColorName name)  -> case StrM.lookup name htmlSchemeMap of
+                                              Nothing    -> Color.black
+                                              Just color -> color
+
+               Just (ColorHex hex)    -> case Color.fromHexString hex of
+                                              Nothing    -> Color.black
+                                              Just color -> color
+               _                      -> Color.black) -- TODO FIXME: default
+    pure $ H.span [CSS.style $ CSS.color color] html
 
 
 

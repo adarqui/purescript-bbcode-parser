@@ -31,7 +31,9 @@ module Data.BBCode.Types (
   ImageOpts (..),
   defaultImageOpts,
   SizeOpts (..),
-  defaultSizeOpts
+  defaultSizeOpts,
+  ColorOpts (..),
+  defaultColorOpts
 ) where
 
 
@@ -121,7 +123,7 @@ data BBCode
   | Strike     (List BBCode)
   | Font       FontOpts (List BBCode)
   | Size       SizeOpts (List BBCode)
-  | Color      BBColor (List BBCode)
+  | Color      ColorOpts (List BBCode)
   | Center     (List BBCode)
   | AlignLeft  (List BBCode)
   | AlignRight (List BBCode)
@@ -257,15 +259,13 @@ instance imageSizeEq :: Eq ImageSize where
 
 
 data BBColor
-  = Red
-  | White
-  | Blue
+  = ColorName String
+  | ColorHex  String
 
 instance bbcolorEq :: Eq BBColor where
-  eq Red   Red   = true
-  eq White White = true
-  eq Blue  Blue  = true
-  eq _     _     = false
+  eq (ColorName t1) (ColorName t2) = true
+  eq (ColorHex t1)  (ColorHex t2)  = true
+  eq _              _     = false
 
 
 
@@ -337,4 +337,16 @@ instance sizeOptsEq :: Eq SizeOpts where
 defaultSizeOpts :: SizeOpts
 defaultSizeOpts = SizeOpts {
   sizeValue: Nothing
+}
+
+newtype ColorOpts = ColorOpts {
+  colorValue :: Maybe BBColor
+}
+
+instance colorOptsEq :: Eq ColorOpts where
+  eq (ColorOpts o1) (ColorOpts o2) = o1.colorValue == o2.colorValue
+
+defaultColorOpts :: ColorOpts
+defaultColorOpts = ColorOpts {
+  colorValue: Nothing
 }

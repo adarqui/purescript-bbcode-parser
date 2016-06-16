@@ -17,17 +17,18 @@
     "purescript-assert": "^0.1.1",
     "purescript-elm-compat": "^1.0.0",
     "purescript-transformers": "^0.8.4",
-    "purescript-halogen": "~0.5.5",
+    "purescript-halogen": "^0.8.0",
     "purescript-halogen-bootstrap": "~0.4.0",
     "purescript-halogen-css": "^0.4.0",
     "purescript-css": "^0.7.0",
-    "purescript-nonempty-arrays": "^0.3.0"
+    "purescript-nonempty-arrays": "^0.3.0",
+    "purescript-colors": "^0.4.4"
   },
   "resolutions": {
     "purescript-sequences": "^0.6.0",
     "purescript-aff": "~0.16.1",
-    "purescript-halogen": "^0.7.0",
     "purescript-aff-coroutines": "^0.6.0",
-    "purescript-css": "^0.6.0"
+    "purescript-css": "^0.7.0",
+    "purescript-halogen": "^0.8.0"
   }
 }

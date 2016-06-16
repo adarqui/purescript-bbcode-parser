@@ -57,7 +57,7 @@ tokenParser = makeTokenParser haskellDef
 
 open :: forall m a. (Monad m) => ParserT String m Token
 open = do
-  string "["
+  _ <- string "["
   c <- letter
   r <- manyTill letter (string "]")
   return $ BBOpen Nothing (fromCharListToLower $ c : r)
@@ -66,7 +66,7 @@ open = do
 
 openWithParams :: forall m a. (Monad m) => ParserT String m Token
 openWithParams = do
-  string "["
+  _ <- string "["
   c <- letter
   r <- manyTill letter (string " " <|> string "=")
   pc <- anyChar
@@ -77,7 +77,7 @@ openWithParams = do
 
 closed :: forall m a. (Monad m) => ParserT String m Token
 closed = do
-  string "[/"
+  _ <- string "[/"
   c <- letter
   r <- manyTill anyChar (string "]")
   return $ BBClosed (fromCharListToLower $ c : r)
@@ -225,7 +225,31 @@ runSize m_params xs =
     _ <- string "em"
     pure $ SizeEm n
 
--- runColor
+
+
+runColor :: BBCodeFn
+runColor m_params xs =
+  case m_params of
+       Nothing -> Right $ Color defaultColorOpts xs
+       Just sz ->
+        -- simple parsing
+        let lr = runParser sz parseBBColor in
+        case lr of
+             Left _  -> Right $ Color defaultColorOpts xs
+             Right v -> Right $ Color (ColorOpts { colorValue: Just v }) xs
+  where
+  parseBBColor = try quoted_name <|> try hex <|> try name
+  quoted_name = do
+    name <- tokenParser.stringLiteral
+    pure $ ColorName name
+  hex = do
+    hex <- char '#' *> some alphaNum
+    pure $ ColorHex (fromCharList $ '#' : hex)
+  name = do
+    name <- tokenParser.identifier
+    pure $ ColorName name
+
+
 
 runCenter :: BBCodeFn
 runCenter = runTextSimple Center "Center"
@@ -318,7 +342,7 @@ defaultBBCodeMap =
     Tuple "s" runStrike,
     Tuple "font" runFont,
     Tuple "size" runSize,
---    Tuple "color" runColor,
+    Tuple "color" runColor,
     Tuple "center" runCenter,
     Tuple "left" runAlignLeft,
     Tuple "right" runAlignRight,

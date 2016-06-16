@@ -29,7 +29,9 @@ module Data.BBCode.Types (
   LinkOpts (..),
   defaultLinkOpts,
   ImageOpts (..),
-  defaultImageOpts
+  defaultImageOpts,
+  SizeOpts (..),
+  defaultSizeOpts
 ) where
 
 
@@ -118,7 +120,7 @@ data BBCode
   | Underline  (List BBCode)
   | Strike     (List BBCode)
   | Font       FontOpts (List BBCode)
-  | Size       BBSize  (List BBCode)
+  | Size       SizeOpts (List BBCode)
   | Color      BBColor (List BBCode)
   | Center     (List BBCode)
   | AlignLeft  (List BBCode)
@@ -214,10 +216,14 @@ instance bbcodeEq :: Eq BBCode where
 
 data BBSize
   = SizePx Int
+  | SizePt Int
+  | SizeEm Int
 
 instance bbsizeEq :: Eq BBSize where
-  eq (SizePx t1) (SizePx t2) = t1 == t2
-  eq _           _           = false
+  eq (SizePx t1)  (SizePx t2)  = t1 == t2
+  eq (SizePt t1)  (SizePt t2)  = t1 == t2
+  eq (SizeEm t1)  (SizeEm t2)  = t1 == t2
+  eq _            _            = false
 
 
 
@@ -319,4 +325,16 @@ defaultFontOpts :: FontOpts
 defaultFontOpts = FontOpts {
   fontFamily: Nothing,
   fontFaces:  []
+}
+
+newtype SizeOpts = SizeOpts {
+  sizeValue :: Maybe BBSize
+}
+
+instance sizeOptsEq :: Eq SizeOpts where
+  eq (SizeOpts o1) (SizeOpts o2) = o1.sizeValue == o2.sizeValue
+
+defaultSizeOpts :: SizeOpts
+defaultSizeOpts = SizeOpts {
+  sizeValue: Nothing
 }

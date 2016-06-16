@@ -65,7 +65,7 @@ codeToHTML tag = do
        Underline xs         -> H.span [CSS.style $ CSS.textDecoration CSS.underline] <$> bbcodeToHTML xs
        Strike xs            -> H.del_ <$> bbcodeToHTML xs
        Font opts xs         -> runFont opts xs
-       Size (SizePx px) xs  -> H.span [CSS.style $ CSS.fontSize $ CSS.px $ toNumber px] <$> bbcodeToHTML xs
+       Size opts xs         -> runSize opts xs
        Color c xs           -> H.span [] <$> bbcodeToHTML xs -- <span style="color: red;">Hello</span>
        Center xs            -> H.center_ <$> bbcodeToHTML xs
        AlignLeft xs         -> H.p [CSS.style $ CSS.textAlign CSS.leftTextAlign] <$> bbcodeToHTML xs
@@ -97,6 +97,45 @@ codeToHTML tag = do
 -- TODO FIXME: need to cleanup these redundant map lookups + trfm
 --
 
+
+runSize :: SizeOpts -> List BBCode -> ParseEff (HTML _ _)
+runSize opts xs = do
+  (r :: ParseReader) <- ask
+  let code = (case M.lookup "size" r.trfm of
+              Nothing   -> Size opts xs
+              Just trfm -> trfm (Size opts xs))
+  go code
+  where
+  go (Size (SizeOpts opts') xs) = do
+    html <- bbcodeToHTML xs
+    let size = (case opts'.sizeValue of
+               Just (SizePx n)  -> CSS.px $ toNumber n
+               Just (SizePt n)  -> CSS.pt $ toNumber n
+               Just (SizeEm n)  -> CSS.pt $ toNumber n
+               _                -> CSS.pt $ toNumber 12) -- TODO FIXME: default
+    pure $ H.span [CSS.style $ CSS.fontSize size] html
+
+--  H.span [CSS.style $ CSS.fontSize $ CSS.px $ toNumber px] <$> bbcodeToHTML xs
+
+
+
+runFont :: FontOpts -> List BBCode -> ParseEff (HTML _ _)
+runFont opts xs = do
+  (r :: ParseReader) <- ask
+  let code = (case M.lookup "font" r.trfm of
+              Nothing   -> Font opts xs
+              Just trfm -> trfm (Font opts xs))
+  go code
+  where
+  go (Font (FontOpts opts') xs) = do
+    html <- bbcodeToHTML xs
+    let fam = (case opts'.fontFamily of
+              Nothing  -> CSS.sansSerif
+              Just fam -> CSS.GenericFontFamily $ CSS.fromString fam)
+    pure $ H.span [CSS.style $ CSS.fontFamily opts'.fontFaces (NonEmpty.singleton fam)] html
+
+
+
 runImage :: ImageOpts -> MediaURL -> ParseEff (HTML _ _)
 runImage opts url = do
   (r :: ParseReader) <- ask
@@ -117,20 +156,3 @@ runImage opts url = do
                          Just (ImagePercent n) -> [P.width $ P.Percent n]
     let props = height_props <> width_props
     pure (H.img $ props <> [P.src url])
-
-
-
-runFont :: FontOpts -> List BBCode -> ParseEff (HTML _ _)
-runFont opts xs = do
-  (r :: ParseReader) <- ask
-  let code = (case M.lookup "font" r.trfm of
-              Nothing   -> Font opts xs
-              Just trfm -> trfm (Font opts xs))
-  go code
-  where
-  go (Font (FontOpts opts') xs) = do
-    html <- bbcodeToHTML xs
-    let fam = (case opts'.fontFamily of
-              Nothing  -> CSS.sansSerif
-              Just fam -> CSS.GenericFontFamily $ CSS.fromString fam)
-    pure $ H.span [CSS.style $ CSS.fontFamily opts'.fontFaces (NonEmpty.singleton fam)] html

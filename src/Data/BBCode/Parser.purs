@@ -50,6 +50,11 @@ import Data.BBCode.Types
 
 
 
+tokenParser :: TokenParser
+tokenParser = makeTokenParser haskellDef
+
+
+
 open :: forall m a. (Monad m) => ParserT String m Token
 open = do
   string "["
@@ -195,7 +200,31 @@ runFont m_params xs =
        Just font -> Right $ Font (FontOpts { fontFamily: Just font, fontFaces: [] }) xs
        -- TODO FIXME: font faces
 
--- runSize
+runSize :: BBCodeFn
+runSize m_params xs =
+  case m_params of
+       Nothing -> Right $ Size defaultSizeOpts xs
+       Just sz ->
+        -- simple parsing
+        let lr = runParser sz parseBBSize in
+        case lr of
+             Left _  -> Right $ Size defaultSizeOpts xs
+             Right v -> Right $ Size (SizeOpts { sizeValue: Just v }) xs
+  where
+  parseBBSize = try px <|> try pt <|> try em
+  px = do
+    n <- tokenParser.integer
+    _ <- string "px"
+    pure $ SizePx n
+  pt = do
+    n <- tokenParser.integer
+    _ <- string "pt"
+    pure $ SizePt n
+  em = do
+    n <- tokenParser.integer
+    _ <- string "em"
+    pure $ SizeEm n
+
 -- runColor
 
 runCenter :: BBCodeFn
@@ -288,7 +317,7 @@ defaultBBCodeMap =
     Tuple "u" runUnderline,
     Tuple "s" runStrike,
     Tuple "font" runFont,
---    Tuple "size" runSize,
+    Tuple "size" runSize,
 --    Tuple "color" runColor,
     Tuple "center" runCenter,
     Tuple "left" runAlignLeft,

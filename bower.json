@@ -1,15 +1,23 @@
 {
   "name": "purescript-bbcode-parser",
-  "version": "0.1.0",
+  "homepage": "https://github.com/adarqui/purescript-bbcode-parser",
+  "description": "BBCode parser in progress.",
   "license": "MIT",
   "moduleType": [
     "node"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/adarqui/purescript-bbcode-parser.git"
+  },
   "ignore": [
     "**/.*",
-    "node_modules",
     "bower_components",
-    "output"
+    "node_modules",
+    "output",
+    "test",
+    "bower.json",
+    "package.json"
   ],
   "dependencies": {
     "purescript-console": "^0.1.0",

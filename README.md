@@ -1,6 +1,6 @@
 # purescript-bbcode-parser
 
-![Alt text](/assets/baby-honey-badgerjpg?raw=true "Purescript BBCode Parser Mascot")
+![Purescript BBCode Parser Mascot](/assets/baby-honey-badger.jpg?raw=true "Purescript BBCode Parser Mascot")
 
 ^^ Will eventually grow into a fierce honey badger.
 

@@ -6,33 +6,36 @@ module Data.BBCode.HTML (
 
 
 
-import Control.Monad.RWS
-import Control.Monad.Reader
+import Control.Monad.RWS               (evalRWS)
+import Control.Monad.Reader            (ask)
 import Data.Array                      as A
 import Data.NonEmpty                   as NonEmpty
 import Data.Int                        (toNumber)
 import Data.List                       as L
-import Data.List                       (List(..))
+import Data.List                       (List)
 import Data.Maybe                      (Maybe(..))
 import Data.Map                        as M
 import Data.StrMap                     as StrM
 import Data.Tuple                      (Tuple(..), fst)
 
-import Color                           as Color
-import Color.Scheme.HTML               as Color
-import Halogen                         (ComponentHTML, HTML)
+import Color                           (Color, black, fromHexString) as Color
+import Color.Scheme.HTML               (aqua, teal, blue, navy, yellow, olive, lime, green
+                                       ,fuchsia, purple, red, maroon, gray, silver)
+                                       as Color
+import Halogen                         (HTML)
 import Halogen.HTML.Indexed            as H
 import Halogen.HTML.Properties.Indexed as P
-import Halogen.HTML.CSS.Indexed        as CSS
-import CSS.Font                        as CSS
-import CSS.Size                        as CSS
-import CSS.String                      as CSS
-import CSS.Text                        as CSS
-import CSS.TextAlign                   as CSS
-import Halogen.Themes.Bootstrap3       as B
-import Prelude                         (Unit, id, show, map, bind, pure, (<$>), (<*>), ($), (<>))
+import Halogen.HTML.CSS.Indexed        (style) as CSS
+import CSS.Font                        (GenericFontFamily(GenericFontFamily), color, fontFamily, sansSerif, fontSize) as CSS
+import CSS.Size                        (pt, px) as CSS
+import CSS.String                      (fromString) as CSS
+import CSS.Text                        (underline, textDecoration) as CSS
+import CSS.TextAlign                   (rightTextAlign, textAlign, leftTextAlign) as CSS
+import Prelude                         (Unit, bind, pure, ($), (<>), (<$>))
 
-import Data.BBCode.Types
+import Data.BBCode.Types               (ParseReader, ParseEff, MediaURL, BBCode(..), BBColor(..), BBSize(..)
+                                       ,ColorOpts(..), FontOpts(..), ImageOpts(..), ImageSize(..), SizeOpts(..)
+                                       ,defaultParseState, defaultParseReader)
 
 
 
@@ -133,10 +136,10 @@ runFont opts xs = do
   where
   go (Font (FontOpts opts') xs) = do
     html <- bbcodeToHTML xs
-    let fam = (case opts'.fontFamily of
+    let fam' = (case opts'.fontFamily of
               Nothing  -> CSS.sansSerif
               Just fam -> CSS.GenericFontFamily $ CSS.fromString fam)
-    pure $ H.span [CSS.style $ CSS.fontFamily opts'.fontFaces (NonEmpty.singleton fam)] html
+    pure $ H.span [CSS.style $ CSS.fontFamily opts'.fontFaces (NonEmpty.singleton fam')] html
   go _ = pure $ H.div_ []
 
 
@@ -179,7 +182,7 @@ runColor opts xs = do
   where
   go (Color (ColorOpts opts') xs) = do
     html <- bbcodeToHTML xs
-    let color = (case opts'.colorValue of
+    let color' = (case opts'.colorValue of
                Just (ColorName name)  -> case StrM.lookup name htmlSchemeMap of
                                               Nothing    -> Color.black
                                               Just color -> color
@@ -188,7 +191,7 @@ runColor opts xs = do
                                               Nothing    -> Color.black
                                               Just color -> color
                _                      -> Color.black) -- TODO FIXME: default
-    pure $ H.span [CSS.style $ CSS.color color] html
+    pure $ H.span [CSS.style $ CSS.color color'] html
   go _ = pure $ H.div_ []
 
 

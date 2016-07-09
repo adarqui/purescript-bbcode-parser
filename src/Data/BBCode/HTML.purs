@@ -30,25 +30,25 @@ import CSS.String                      as CSS
 import CSS.Text                        as CSS
 import CSS.TextAlign                   as CSS
 import Halogen.Themes.Bootstrap3       as B
-import Prelude                         (id, show, map, bind, pure, (<$>), (<*>), ($), (<>))
+import Prelude                         (Unit, id, show, map, bind, pure, (<$>), (<*>), ($), (<>))
 
 import Data.BBCode.Types
 
 
 
-runBBCodeToHTML :: List BBCode -> Array (HTML _ _)
+runBBCodeToHTML :: forall p i. List BBCode -> Array (HTML p (i Unit))
 runBBCodeToHTML = runBBCodeToHTMLWith defaultParseReader
 
 
 
-runBBCodeToHTMLWith :: ParseReader -> List BBCode -> Array (HTML _ _)
+runBBCodeToHTMLWith :: forall p i. ParseReader -> List BBCode -> Array (HTML p (i Unit))
 runBBCodeToHTMLWith parse_reader codes =
   fst $ evalRWS (bbcodeToHTML codes) parse_reader defaultParseState
 
 
 
 -- bbcodeToHTML :: List BBCode -> HTML _ _
-bbcodeToHTML :: List BBCode -> ParseEff (Array (HTML _ _))
+bbcodeToHTML :: forall p i. List BBCode -> ParseEff (Array (HTML p (i Unit)))
 bbcodeToHTML codes = go [] codes
   where
   go acc xs =
@@ -60,7 +60,7 @@ bbcodeToHTML codes = go [] codes
 
 
 -- codeToHTML :: 
-codeToHTML :: BBCode -> ParseEff (HTML _ _)
+codeToHTML :: forall p i. BBCode -> ParseEff (HTML p (i Unit))
 codeToHTML tag = do
   case tag of
        Bold xs              -> H.strong_ <$> bbcodeToHTML xs
@@ -101,7 +101,7 @@ codeToHTML tag = do
 --
 
 
-runSize :: SizeOpts -> List BBCode -> ParseEff (HTML _ _)
+runSize :: forall p i. SizeOpts -> List BBCode -> ParseEff (HTML p (i Unit))
 runSize opts xs = do
   (r :: ParseReader) <- ask
   let code = (case M.lookup "size" r.trfm of
@@ -117,12 +117,13 @@ runSize opts xs = do
                Just (SizeEm n)  -> CSS.pt $ toNumber n
                _                -> CSS.pt $ toNumber 12) -- TODO FIXME: default
     pure $ H.span [CSS.style $ CSS.fontSize size] html
+  go _ = pure $ H.div_ []
 
 --  H.span [CSS.style $ CSS.fontSize $ CSS.px $ toNumber px] <$> bbcodeToHTML xs
 
 
 
-runFont :: FontOpts -> List BBCode -> ParseEff (HTML _ _)
+runFont :: forall p i. FontOpts -> List BBCode -> ParseEff (HTML p (i Unit))
 runFont opts xs = do
   (r :: ParseReader) <- ask
   let code = (case M.lookup "font" r.trfm of
@@ -136,6 +137,7 @@ runFont opts xs = do
               Nothing  -> CSS.sansSerif
               Just fam -> CSS.GenericFontFamily $ CSS.fromString fam)
     pure $ H.span [CSS.style $ CSS.fontFamily opts'.fontFaces (NonEmpty.singleton fam)] html
+  go _ = pure $ H.div_ []
 
 
 
@@ -167,7 +169,7 @@ htmlSchemeMap =
 
 
 
-runColor :: ColorOpts -> List BBCode -> ParseEff (HTML _ _)
+runColor :: forall p i. ColorOpts -> List BBCode -> ParseEff (HTML p (i Unit))
 runColor opts xs = do
   (r :: ParseReader) <- ask
   let code = (case M.lookup "color" r.trfm of
@@ -187,10 +189,11 @@ runColor opts xs = do
                                               Just color -> color
                _                      -> Color.black) -- TODO FIXME: default
     pure $ H.span [CSS.style $ CSS.color color] html
+  go _ = pure $ H.div_ []
 
 
 
-runImage :: ImageOpts -> MediaURL -> ParseEff (HTML _ _)
+runImage :: forall p i. ImageOpts -> MediaURL -> ParseEff (HTML p (i Unit))
 runImage opts url = do
   (r :: ParseReader) <- ask
   let code = (case M.lookup "img" r.trfm of
@@ -210,3 +213,4 @@ runImage opts url = do
                          Just (ImagePercent n) -> [P.width $ P.Percent n]
     let props = height_props <> width_props
     pure (H.img $ props <> [P.src url])
+  go _ = pure $ H.div_ []

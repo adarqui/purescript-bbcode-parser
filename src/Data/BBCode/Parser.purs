@@ -35,8 +35,8 @@ import Data.Maybe
 import Data.String hiding (uncons)
 import Data.String as String
 import Data.Tuple
-import Elm.List as ElmL
-import Prelude -- (Monad, Functor, bind, return, (<$>), (+))
+import Data.Unfoldable (replicate)
+import Prelude -- (Monad, Functor, bind, pure, (<$>), (+))
 import Test.Assert
 import Text.Parsing.Parser
 import Text.Parsing.Parser.Combinators
@@ -60,7 +60,7 @@ open = do
   _ <- string "["
   c <- letter
   r <- manyTill letter (string "]")
-  return $ BBOpen Nothing (fromCharListToLower $ c : r)
+  pure $ BBOpen Nothing (fromCharListToLower $ c : r)
 
 
 
@@ -71,7 +71,7 @@ openWithParams = do
   r <- manyTill letter (string " " <|> string "=")
   pc <- anyChar
   pr <- manyTill anyChar (string "]")
-  return $ BBOpen (Just (fromCharList $ pc : pr)) (fromCharListToLower $ c : r)
+  pure $ BBOpen (Just (fromCharList $ pc : pr)) (fromCharListToLower $ c : r)
 
 
 
@@ -80,21 +80,21 @@ closed = do
   _ <- string "[/"
   c <- letter
   r <- manyTill anyChar (string "]")
-  return $ BBClosed (fromCharListToLower $ c : r)
+  pure $ BBClosed (fromCharListToLower $ c : r)
 
 
 
 str :: forall m a. (Monad m) => ParserT String m Token
 str = do
   r <- some (noneOf ['[', ']'])
-  return $ BBStr (fromCharList r)
+  pure $ BBStr (fromCharList r)
 
 
 
 catchAll :: forall m a. (Monad m) => ParserT String m Token
 catchAll = do
   r <- some anyChar
-  return $ BBStr (fromCharList r)
+  pure $ BBStr (fromCharList r)
 
 
 
@@ -113,13 +113,13 @@ tokens = L.many token
 str :: forall m. (Monad m) => ParserT String m String
 str = do
   cs <- many $ satisfy \c -> true
-  return $ fromCharArray cs
+  pure $ fromCharArray cs
   -}
 
 
 
 fromCharList :: forall f. Foldable f => f Char -> String
-fromCharList = foldMap fromChar
+fromCharList = foldMap String.singleton
 
 
 
@@ -150,7 +150,11 @@ concatTokens = go Nil
 -- | Once we have a list of BBStr's, turn them into one BBStr
 --
 concatBBStr :: List Token -> Token
-concatBBStr = BBStr <$> Elm.String.concat <<< map (\(BBStr s) -> s) <<< filter isBBStr
+-- concatBBStr = BBStr <$> Elm.String.concat <<< map (\(BBStr s) -> s) <<< filter isBBStr
+concatBBStr = BBStr <$> joinWith "" <<< toUnfoldable <<< map go <<< filter isBBStr
+  where
+  go (BBStr s) = s
+  go _         = ""
 
 
 
@@ -441,8 +445,8 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
     case uncons toks' of
       Nothing -> do
         case stack of
-          Nil                    -> return $ Right $ reverse accum
-          (Cons (Tuple _ tag) _) -> return $ Left $ tag <> " not closed"
+          Nil                    -> pure $ Right $ reverse accum
+          (Cons (Tuple _ tag) _) -> pure $ Left $ tag <> " not closed"
       Just { head, tail } ->
         case head of
 
@@ -465,7 +469,7 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
             if M.member tag umap
                then do
                  case (runBBCode params tag Nil umap) of
-                   Left err   -> return $ Left err
+                   Left err   -> pure $ Left err
                    Right new' -> do
                      modify (\st -> st{ accum = (new' : st.accum) })
                      go tail level
@@ -475,13 +479,13 @@ parseBBCodeFromTokens' bmap umap cmap toks = go toks 0
 
           BBClosed tag      -> do
             case uncons stack of
-              Nothing -> return $ Left $ tag <> " not pushed"
+              Nothing -> pure $ Left $ tag <> " not pushed"
               Just { head: Tuple params tag, tail : stTail } -> do
                 let
                   beneath = filter (\(Tuple l v) -> l < level) saccum
                   at_or_above = filter (\(Tuple l v) -> l >= level) saccum
                 case (try_maps params tag (L.reverse $ map snd at_or_above)) of
-                  Left err -> return $ Left err
+                  Left err -> pure $ Left err
                   Right new' -> do
                     if L.null stTail
                        then do

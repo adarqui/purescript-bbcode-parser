@@ -39,6 +39,7 @@ module Data.BBCode.Types (
 
 
 import Control.Monad.RWS (RWS)
+import Data.BBCode.Misc  (intersperse)
 import Data.Either       (Either)
 import Data.Foldable     (foldl)
 import Data.List         (List(..))
@@ -46,7 +47,6 @@ import Data.Map          as M
 import Data.Maybe        (Maybe(..))
 import Data.String       (toLower)
 import Data.Tuple        (Tuple)
-import Elm.List          (intersperse)
 import Prelude           (Unit, class Show, show, class Eq, map, (<>), (==), (<<<), (&&), (+), (-), ($))
 
 

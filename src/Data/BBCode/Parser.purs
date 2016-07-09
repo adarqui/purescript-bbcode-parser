@@ -18,35 +18,29 @@ module Data.BBCode.Parser (
 
 
 import Control.Alt -- ((<|>))
-import Control.Apply
-import Control.Lazy -- (fix)
-import Control.Monad.Eff
-import Control.Monad.Eff.Class
-import Control.Monad.Eff.Console
-import Control.Monad.RWS
-import Data.Either
-import Data.Foldable
-import Data.Functor
-import Data.List hiding (many)
+import Control.Monad.RWS               (evalRWS, modify, gets)
+import Data.Either                     (Either(..))
+import Data.Foldable                   (class Foldable, foldMap)
+import Data.List                       (List(..), filter, uncons, reverse, some, toUnfoldable, (:))
 import Data.List as L
-import Data.Array (many)
 import Data.Map as M
-import Data.Maybe
-import Data.String hiding (uncons)
+import Data.Maybe                      (Maybe(..))
+import Data.String                     (joinWith, toLower)
 import Data.String as String
-import Data.Tuple
-import Data.Unfoldable (replicate)
-import Prelude -- (Monad, Functor, bind, pure, (<$>), (+))
-import Test.Assert
-import Text.Parsing.Parser
-import Text.Parsing.Parser.Combinators
-import Text.Parsing.Parser.Expr
-import Text.Parsing.Parser.Language
-import Text.Parsing.Parser.String
-import Text.Parsing.Parser.Token hiding (digit)
-import Text.Parsing.Parser.Pos
+import Data.Tuple                      (Tuple(..), fst, snd)
+import Data.Unfoldable                 (replicate)
+import Prelude                         (class Monad, bind, pure, map, show, ($), (-), (>=), (<), (<>)
+                                       ,(+), (>), (==), (||), (/=), (&&), (*>), (<<<), (<$>))
+import Text.Parsing.Parser             (Parser, ParserT, runParser)
+import Text.Parsing.Parser.Combinators (try, manyTill)
+import Text.Parsing.Parser.Language    (haskellDef)
+import Text.Parsing.Parser.String      (char, string, anyChar, noneOf)
+import Text.Parsing.Parser.Token       (TokenParser, alphaNum, letter, makeTokenParser)
 
-import Data.BBCode.Types
+import Data.BBCode.Types               (ParseReader, BBDoc, ParseEff, BBCodeMap, ErrorMsg, Parameters, TagName, BBCodeFn
+                                       ,BBCode(..), BBColor(..), BBSize(..), ColorOpts(..), FontOpts(..), SizeOpts(..)
+                                       ,Token(..), defaultParseState, defaultParseReader, defaultImageOpts, defaultColorOpts
+                                       ,defaultSizeOpts, defaultFontOpts)
 
 
 

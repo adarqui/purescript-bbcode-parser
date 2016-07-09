@@ -4,11 +4,13 @@ module Test.Main where
 import Data.Either                     (Either(..))
 import Data.List                       (List(..))
 import Data.Maybe                      (Maybe(..))
+import Data.String                     (fromCharArray) as String
+import Data.Unfoldable                 (replicate)
 import Halogen                         (ComponentHTML, HTML)
 import Halogen.HTML.Indexed            as H
 import Halogen.HTML.Properties.Indexed as P
 import Halogen.Themes.Bootstrap3       as B
-import Prelude                         (bind, ($), (<$>))
+import Prelude                         (bind, ($), (<$>), (<>))
 import Test.Unit                       (test)
 import Test.Unit.Main                  (runTest)
 import Test.Unit.Assert                as Assert
@@ -171,6 +173,20 @@ main = runTest do
     Assert.equal
       (Right $ Cons (Link (Just "name") "someUrl") Nil)
       $ parseBBCode "[url=someUrl]name[/url]"
+
+    let
+      bigString n      = String.fromCharArray (replicate n 'A')
+      big_string_1024  = bigString 1024
+      big_string_10024 = bigString 10024
+
+    Assert.equal
+      (Right $ Cons (Bold (Cons (Text big_string_1024) Nil)) Nil)
+      $ parseBBCode $ "[b]" <> big_string_1024 <> "[/b]"
+
+    Assert.equal
+      (Right $ Cons (Bold (Cons (Text big_string_10024) Nil)) Nil)
+      $ parseBBCode $ "[b]" <> big_string_10024 <> "[/b]"
+
 
 --    Assert.equal
 --      (Right $ Cons ..

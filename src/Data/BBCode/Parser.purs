@@ -49,7 +49,7 @@ tokenParser = makeTokenParser haskellDef
 
 
 
-open :: forall m a. (Monad m) => ParserT String m Token
+open :: forall m. (Monad m) => ParserT String m Token
 open = do
   _ <- string "["
   c <- letter
@@ -58,7 +58,7 @@ open = do
 
 
 
-openWithParams :: forall m a. (Monad m) => ParserT String m Token
+openWithParams :: forall m. (Monad m) => ParserT String m Token
 openWithParams = do
   _ <- string "["
   c <- letter
@@ -69,7 +69,7 @@ openWithParams = do
 
 
 
-closed :: forall m a. (Monad m) => ParserT String m Token
+closed :: forall m. (Monad m) => ParserT String m Token
 closed = do
   _ <- string "[/"
   c <- letter
@@ -78,26 +78,26 @@ closed = do
 
 
 
-str :: forall m a. (Monad m) => ParserT String m Token
+str :: forall m. (Monad m) => ParserT String m Token
 str = do
   r <- some (noneOf ['[', ']'])
   pure $ BBStr (fromCharList r)
 
 
 
-catchAll :: forall m a. (Monad m) => ParserT String m Token
+catchAll :: forall m. (Monad m) => ParserT String m Token
 catchAll = do
   r <- some anyChar
   pure $ BBStr (fromCharList r)
 
 
 
-token :: forall m a. (Monad m) => ParserT String m Token
+token :: forall m. (Monad m) => ParserT String m Token
 token = try closed <|> try openWithParams <|> try open <|> try str <|> try catchAll
 
 
 
-tokens :: forall m a. (Monad m) => ParserT String m (List Token)
+tokens :: forall m. (Monad m) => ParserT String m (List Token)
 tokens = L.many token
 
 
@@ -238,14 +238,14 @@ runColor m_params xs =
   where
   parseBBColor = try quoted_name <|> try hex <|> try name
   quoted_name = do
-    name <- tokenParser.stringLiteral
-    pure $ ColorName name
+    name' <- tokenParser.stringLiteral
+    pure $ ColorName name'
   hex = do
-    hex <- char '#' *> some alphaNum
-    pure $ ColorHex (fromCharList $ '#' : hex)
+    hex_code <- char '#' *> some alphaNum
+    pure $ ColorHex (fromCharList $ '#' : hex_code)
   name = do
-    name <- tokenParser.identifier
-    pure $ ColorName name
+    name' <- tokenParser.identifier
+    pure $ ColorName name'
 
 
 
@@ -392,19 +392,19 @@ parseTextAndNewlines = go Nil
   go acc "" = acc
   go acc s  =
     let
-      str    = String.takeWhile (\c -> c /= '\r' && c /= '\n') s
-      nl     = if (String.length str == 0)
+      str'   = String.takeWhile (\c -> c /= '\r' && c /= '\n') s
+      nl     = if (String.length str' == 0)
                   then String.length $ String.takeWhile (\c -> c == '\r' || c == '\n') s
                   else 0
       rest   = if (nl > 0)
                   then String.drop nl s
-                  else String.drop (String.length str) s
+                  else String.drop (String.length str') s
     in
       if (nl > 0)
          then
            go (replicate nl NL <> acc) rest
          else
-           go (Text str : acc) rest
+           go (Text str' : acc) rest
 
 
 

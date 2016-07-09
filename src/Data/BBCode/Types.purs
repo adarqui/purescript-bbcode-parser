@@ -179,7 +179,6 @@ instance bbcodeShow :: Show BBCode where
   show HR                = "HR"
   show NL                = "NL"
   show None              = "None"
-  show _                 = "Unknown"
 
 instance bbcodeEq :: Eq BBCode where
   eq (Bold t1)      (Bold t2)      = t1 == t2
@@ -234,7 +233,6 @@ data BBList
 
 instance bblistEq :: Eq BBList where
   eq (ListItem t1) (ListItem t2) = t1 == t2
-  eq _             _             = false
 
 
 
@@ -243,7 +241,6 @@ data BBTable
 
 instance bbtableEq :: Eq BBTable where
   eq (TableRow t1) (TableRow t2) = t1 == t2
-  eq _             _             = false
 
 
 

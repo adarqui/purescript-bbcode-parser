@@ -29,11 +29,11 @@ import Data.String                     (joinWith, toLower)
 import Data.String as String
 import Data.Tuple                      (Tuple(..), fst, snd)
 import Data.Unfoldable                 (replicate)
-import Prelude                         (class Monad, bind, pure, map, show, ($), (-), (>=), (<), (<>)
+import Prelude                         (bind, pure, map, show, ($), (-), (>=), (<), (<>)
                                        ,(+), (>), (==), (||), (/=), (&&), (*>), (<<<), (<$>))
 import Text.Parsing.Simple             (Parser, parse, try,
                                        char, string, alphanum, letter, int, item
-                                       ,isn't, isn'tAny, some, many)
+                                       ,isn'tAny, some, many)
 
 import Data.BBCode.Types               (ParseReader, BBDoc, ParseEff, BBCodeMap, ErrorMsg, Parameters, TagName, BBCodeFn
                                        ,BBCode(..), BBColor(..), BBSize(..), ColorOpts(..), FontOpts(..), SizeOpts(..)
@@ -42,26 +42,21 @@ import Data.BBCode.Types               (ParseReader, BBDoc, ParseEff, BBCodeMap,
 
 
 
+-- | Parses both [tag] and [tag params] | [tag=params]
+--
 open :: Parser String Token
 open = do
   _ <- string "["
   c <- letter
-  r <- many (isn'tAny "]")
-  _ <- char ']'
-  pure $ BBOpen Nothing (fromCharListToLower $ c : r)
-
-
-
-openWithParams :: Parser String Token
-openWithParams = do
-  _ <- string "["
-  c <- letter
-  r <- many (isn'tAny " =")
-  _ <- (char ' ' <|> char '=')
-  pc <- item
-  pr <- many (isn'tAny "]")
-  _ <- char ']'
-  pure $ BBOpen (Just (fromCharList $ pc : pr)) (fromCharListToLower $ c : r)
+  r <- many (isn'tAny " =]")
+  c' <- (char ' ' <|> char '=' <|> char ']')
+  case c' of
+    ']' -> pure $ BBOpen Nothing (fromCharListToLower $ c : r)
+    _   -> do
+          pc <- item
+          pr <- many (isn'tAny "]")
+          _ <- char ']'
+          pure $ BBOpen (Just (fromCharList $ pc : pr)) (fromCharListToLower $ c : r)
 
 
 
@@ -106,7 +101,7 @@ catchAll = do
 
 token :: Parser String Token
 token = do
-  try closed <|> try openWithParams <|> try open <|> try str <|> try catchAll
+  try closed <|> try open <|> try str <|> try catchAll
 
 
 

@@ -1,26 +1,25 @@
 module Test.Main where
 
 
+import Control.Monad.Eff               (Eff())
+import Control.Monad.Eff.Console       (CONSOLE())
 import Data.Either                     (Either(..))
 import Data.List                       (List(..))
 import Data.Maybe                      (Maybe(..))
 import Data.String                     (fromCharArray) as String
 import Data.Unfoldable                 (replicate)
-import Halogen                         (ComponentHTML, HTML)
-import Halogen.HTML.Indexed            as H
-import Halogen.HTML.Properties.Indexed as P
-import Halogen.Themes.Bootstrap3       as B
-import Prelude                         (bind, ($), (<$>), (<>))
+import Prelude                         (Unit, bind, ($), (<$>), (<>))
 import Test.Unit                       (test)
 import Test.Unit.Main                  (runTest)
 import Test.Unit.Assert                as Assert
+import Test.Unit.Console               (TESTOUTPUT())
 
-import Data.BBCode.HTML
-import Data.BBCode.Parser
-import Data.BBCode.Types
+import Data.BBCode.Parser              (parseBBCode, parseTokens', concatTokens, concatBBStr)
+import Data.BBCode.Types               (BBCode(..), Token(..), flattenTokens)
 
 
 
+main :: forall t. Eff (console :: CONSOLE, testOutput :: TESTOUTPUT | t) Unit
 main = runTest do
 
 
@@ -85,6 +84,10 @@ main = runTest do
       (Right "open(quote, author=adarqui),str(hello),closed(quote)")
       $ flattenTokens <$> parseTokens' "[quote author=adarqui]hello[/quote]"
 
+    Assert.equal
+      (Right "open(youtube),str(https://www.youtube.com/watch?v=video),closed(youtube)")
+      $ flattenTokens <$> parseTokens' "[youtube]https://www.youtube.com/watch?v=video[/youtube]"
+
 
 
   test "BBCode Parsing Tests" do
@@ -92,6 +95,10 @@ main = runTest do
     Assert.equal
       (Right $ Cons (Text "hello") Nil)
       $ parseBBCode "hello"
+
+    Assert.equal
+      (Right $ Cons (Text "/:?") Nil)
+      $ parseBBCode "/:?"
 
     Assert.equal
       (Right $ Cons (Text "[") Nil)
@@ -122,6 +129,10 @@ main = runTest do
       $ parseBBCode "[b]hello[/b]"
 
     Assert.equal
+      (Right $ Cons (Bold (Cons (Text "https://adarq.org") Nil)) Nil)
+      $ parseBBCode "[b]https://adarq.org[/b]"
+
+    Assert.equal
       (Right $ Cons (Underline (Cons (Bold (Cons (Text "hello") Nil)) Nil)) Nil)
       $ parseBBCode "[u][b]hello[/b][/u]"
 
@@ -143,9 +154,9 @@ main = runTest do
       (Right (Cons (Text("zero")) (Cons (Underline(Cons (Text("one")) (Cons (Bold(Cons (Text("two")) (Nil))) (Cons (Text("three")) (Nil))))) (Cons (Text("four")) (Nil)))))
       $ parseBBCode "zero[u]one[b]two[/b]three[/u]four"
 
-    {-- Assert.equal --}
-    {--   (Right (Cons (Youtube "https://www.youtube.com/watch?v=video") Nil)) --}
-    {--   $ parseBBCode "[youtube]https://www.youtube.com/watch?v=video[/youtube]" --}
+    Assert.equal
+      (Right (Cons (Youtube "https://www.youtube.com/watch?v=video") Nil))
+      $ parseBBCode "[youtube]https://www.youtube.com/watch?v=video[/youtube]"
 
     Assert.equal
       (Right (Cons HR Nil))
@@ -167,9 +178,9 @@ main = runTest do
       (Right (Cons NL (Cons (Text "hi") Nil)))
       $ parseBBCode "\nhi"
 
-    {-- Assert.equal --}
-    {--   (Right (Cons (Text("I am the ")) (Cons (Bold(Cons (Text("best")) (Nil))) (Cons (Text(" man, I ")) (Cons (Bold(Cons (Text("deed")) (Nil))) (Cons (Text(" it. ")) (Cons (Bold(Cons (Text("yup")) (Nil))) (Nil)))))))) --}
-    {--   $ parseBBCode "I am the [b]best[/b] man, I [b]deed[/b] it. [b]yup[/b]" --}
+    Assert.equal
+      (Right (Cons (Text("I am the ")) (Cons (Bold(Cons (Text("best")) (Nil))) (Cons (Text(" man, I ")) (Cons (Bold(Cons (Text("deed")) (Nil))) (Cons (Text(" it. ")) (Cons (Bold(Cons (Text("yup")) (Nil))) (Nil))))))))
+      $ parseBBCode "I am the [b]best[/b] man, I [b]deed[/b] it. [b]yup[/b]"
 
     Assert.equal
       (Right $ Cons (Link (Just "name") "someUrl") Nil)

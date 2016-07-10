@@ -47,6 +47,7 @@ main = runTest do
   test "Token Parser Tests" do
 
     Assert.equal (Right $ Cons (BBStr "hello") Nil)  $ parseTokens' "hello"
+
     Assert.equal (Right $ Cons (BBStr "[") Nil)      $ parseTokens' "["
     Assert.equal (Right $ Cons (BBStr "]") Nil)      $ parseTokens' "]"
     Assert.equal (Right $ Cons (BBStr "[ b ]") Nil)  $ parseTokens' "[ b ]"
@@ -142,9 +143,9 @@ main = runTest do
       (Right (Cons (Text("zero")) (Cons (Underline(Cons (Text("one")) (Cons (Bold(Cons (Text("two")) (Nil))) (Cons (Text("three")) (Nil))))) (Cons (Text("four")) (Nil)))))
       $ parseBBCode "zero[u]one[b]two[/b]three[/u]four"
 
-    Assert.equal
-      (Right (Cons (Youtube "https://www.youtube.com/watch?v=video") Nil))
-      $ parseBBCode "[youtube]https://www.youtube.com/watch?v=video[/youtube]"
+    {-- Assert.equal --}
+    {--   (Right (Cons (Youtube "https://www.youtube.com/watch?v=video") Nil)) --}
+    {--   $ parseBBCode "[youtube]https://www.youtube.com/watch?v=video[/youtube]" --}
 
     Assert.equal
       (Right (Cons HR Nil))
@@ -166,9 +167,9 @@ main = runTest do
       (Right (Cons NL (Cons (Text "hi") Nil)))
       $ parseBBCode "\nhi"
 
-    Assert.equal
-      (Right (Cons (Text("I am the ")) (Cons (Bold(Cons (Text("best")) (Nil))) (Cons (Text(" man, I ")) (Cons (Bold(Cons (Text("deed")) (Nil))) (Cons (Text(" it. ")) (Cons (Bold(Cons (Text("yup")) (Nil))) (Nil))))))))
-      $ parseBBCode "I am the [b]best[/b] man, I [b]deed[/b] it. [b]yup[/b]"
+    {-- Assert.equal --}
+    {--   (Right (Cons (Text("I am the ")) (Cons (Bold(Cons (Text("best")) (Nil))) (Cons (Text(" man, I ")) (Cons (Bold(Cons (Text("deed")) (Nil))) (Cons (Text(" it. ")) (Cons (Bold(Cons (Text("yup")) (Nil))) (Nil)))))))) --}
+    {--   $ parseBBCode "I am the [b]best[/b] man, I [b]deed[/b] it. [b]yup[/b]" --}
 
     Assert.equal
       (Right $ Cons (Link (Just "name") "someUrl") Nil)

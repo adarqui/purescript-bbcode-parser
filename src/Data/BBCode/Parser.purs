@@ -21,7 +21,7 @@ import Control.Alt -- ((<|>))
 import Control.Monad.RWS               (evalRWS, modify, gets)
 import Data.Either                     (Either(..))
 import Data.Foldable                   (class Foldable, foldMap)
-import Data.List                       (List(..), filter, uncons, reverse, some, toUnfoldable, (:))
+import Data.List                       (List(..), filter, uncons, reverse, toUnfoldable, (:))
 import Data.List as L
 import Data.Map as M
 import Data.Maybe                      (Maybe(..))
@@ -31,11 +31,9 @@ import Data.Tuple                      (Tuple(..), fst, snd)
 import Data.Unfoldable                 (replicate)
 import Prelude                         (class Monad, bind, pure, map, show, ($), (-), (>=), (<), (<>)
                                        ,(+), (>), (==), (||), (/=), (&&), (*>), (<<<), (<$>))
-import Text.Parsing.Parser             (Parser, ParserT, runParser)
-import Text.Parsing.Parser.Combinators (try, manyTill)
-import Text.Parsing.Parser.Language    (haskellDef)
-import Text.Parsing.Parser.String      (char, string, anyChar, noneOf)
-import Text.Parsing.Parser.Token       (TokenParser, alphaNum, letter, makeTokenParser)
+import Text.Parsing.Simple             (Parser, parse, try,
+                                       char, string, alphanum, letter, int, item
+                                       ,isn't, isn'tAny, some, many)
 
 import Data.BBCode.Types               (ParseReader, BBDoc, ParseEff, BBCodeMap, ErrorMsg, Parameters, TagName, BBCodeFn
                                        ,BBCode(..), BBColor(..), BBSize(..), ColorOpts(..), FontOpts(..), SizeOpts(..)
@@ -44,71 +42,76 @@ import Data.BBCode.Types               (ParseReader, BBDoc, ParseEff, BBCodeMap,
 
 
 
-tokenParser :: TokenParser
-tokenParser = makeTokenParser haskellDef
-
-
-
-open :: forall m. (Monad m) => ParserT String m Token
+open :: Parser String Token
 open = do
   _ <- string "["
   c <- letter
-  r <- manyTill letter (string "]")
+  r <- many (isn'tAny "]")
+  _ <- char ']'
   pure $ BBOpen Nothing (fromCharListToLower $ c : r)
 
 
 
-openWithParams :: forall m. (Monad m) => ParserT String m Token
+openWithParams :: Parser String Token
 openWithParams = do
   _ <- string "["
   c <- letter
-  r <- manyTill letter (string " " <|> string "=")
-  pc <- anyChar
-  pr <- manyTill anyChar (string "]")
+  r <- many (isn'tAny " =")
+  _ <- (char ' ' <|> char '=')
+  pc <- item
+  pr <- many (isn'tAny "]")
+  _ <- char ']'
   pure $ BBOpen (Just (fromCharList $ pc : pr)) (fromCharListToLower $ c : r)
 
 
 
-closed :: forall m. (Monad m) => ParserT String m Token
+closed :: Parser String Token
 closed = do
   _ <- string "[/"
   c <- letter
-  r <- manyTill anyChar (string "]")
+  r <- many (isn'tAny "]")
+  _ <- char ']'
   pure $ BBClosed (fromCharListToLower $ c : r)
 
 
 
-str :: forall m. (Monad m) => ParserT String m Token
+str :: Parser String Token
 str = do
-  r <- some (noneOf ['[', ']'])
+  r <- some (isn'tAny "[]")
   pure $ BBStr (fromCharList r)
 
 
 
-catchAll :: forall m. (Monad m) => ParserT String m Token
+stringLiteral :: Parser String String
+stringLiteral = do
+  _ <- char '"'
+  s <- fromCharList <$> some (isn'tAny "\"")
+  _ <- char '"'
+  pure s
+
+
+
+identifier :: Parser String String
+identifier = do
+  fromCharList <$> some (isn'tAny " ")
+
+
+
+catchAll :: Parser String Token
 catchAll = do
-  r <- some anyChar
+  r <- some item
   pure $ BBStr (fromCharList r)
 
 
 
-token :: forall m. (Monad m) => ParserT String m Token
-token = try closed <|> try openWithParams <|> try open <|> try str <|> try catchAll
+token :: Parser String Token
+token = do
+  try closed <|> try openWithParams <|> try open <|> try str <|> try catchAll
 
 
 
-tokens :: forall m. (Monad m) => ParserT String m (List Token)
-tokens = L.many token
-
-
-
-
-{-
-str :: forall m. (Monad m) => ParserT String m String
-str = do
-  cs <- many $ satisfy \c -> true
-  pure $ fromCharArray cs
-  -}
+tokens :: Parser String (List Token)
+tokens = many token
 
 
 
@@ -144,7 +147,6 @@ concatTokens = go Nil
 -- | Once we have a list of BBStr's, turn them into one BBStr
 --
 concatBBStr :: List Token -> Token
--- concatBBStr = BBStr <$> Elm.String.concat <<< map (\(BBStr s) -> s) <<< filter isBBStr
 concatBBStr = BBStr <$> joinWith "" <<< toUnfoldable <<< map go <<< filter isBBStr
   where
   go (BBStr s) = s
@@ -160,7 +162,7 @@ isBBStr _         = false
 
 parseTokens :: forall s. s -> Parser s (List Token) -> Either String (List Token)
 parseTokens input p =
-  case runParser input p of
+  case parse p input of
     Left err     -> Left $ show err
     Right actual -> Right actual
 
@@ -204,22 +206,22 @@ runSize m_params xs =
        Nothing -> Right $ Size defaultSizeOpts xs
        Just sz ->
         -- simple parsing
-        let lr = runParser sz parseBBSize in
+        let lr = parse parseBBSize sz in
         case lr of
              Left _  -> Right $ Size defaultSizeOpts xs
              Right v -> Right $ Size (SizeOpts { sizeValue: Just v }) xs
   where
   parseBBSize = try px <|> try pt <|> try em
   px = do
-    n <- tokenParser.integer
+    n <- int
     _ <- string "px"
     pure $ SizePx n
   pt = do
-    n <- tokenParser.integer
+    n <- int
     _ <- string "pt"
     pure $ SizePt n
   em = do
-    n <- tokenParser.integer
+    n <- int
     _ <- string "em"
     pure $ SizeEm n
 
@@ -231,20 +233,20 @@ runColor m_params xs =
        Nothing -> Right $ Color defaultColorOpts xs
        Just sz ->
         -- simple parsing
-        let lr = runParser sz parseBBColor in
+        let lr = parse parseBBColor sz in
         case lr of
              Left _  -> Right $ Color defaultColorOpts xs
              Right v -> Right $ Color (ColorOpts { colorValue: Just v }) xs
   where
   parseBBColor = try quoted_name <|> try hex <|> try name
   quoted_name = do
-    name' <- tokenParser.stringLiteral
+    name' <- stringLiteral
     pure $ ColorName name'
   hex = do
-    hex_code <- char '#' *> some alphaNum
+    hex_code <- char '#' *> some alphanum
     pure $ ColorHex (fromCharList $ '#' : hex_code)
   name = do
-    name' <- tokenParser.identifier
+    name' <- identifier
     pure $ ColorName name'
 
 
@@ -323,7 +325,7 @@ runRaw mk _ _ (Cons (Text raw) Nil) = Right $ mk raw
 runRaw _ tag _ _                    = Left $ tag <> " error"
 
 runMedia :: (String -> BBCode) -> TagName -> Maybe Parameters -> List BBCode -> Either ErrorMsg BBCode
-runMedia mk _ _ (Cons (Text url) Nil) = Right $ mk url
+runMedia mk _ _ (Cons (Text url) Nil)  = Right $ mk url
 runMedia _ tag _ (Cons _ Nil)          = Left $ tag <> " error: only urls may be wrapped in " <> tag
 runMedia _ tag _ _                     = Left $ tag <> " error"
 

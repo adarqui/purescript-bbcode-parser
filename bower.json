@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "purescript-console": "^1.0.0",
-    "purescript-parsing": "^1.0.0",
+    "purescript-simple-parser": "^6.0.1",
     "purescript-test-unit": "^7.0.0",
     "purescript-assert": "^1.0.0",
     "purescript-transformers": "^1.0.0",
@@ -32,6 +32,7 @@
     "purescript-nonempty": "^1.1.0",
     "purescript-colors": "^1.0.0",
     "purescript-these": "^1.0.0",
-    "purescript-sets": "^1.0.0"
+    "purescript-sets": "^1.0.0",
+    "purescript-debug": "^1.0.0"
   }
 }
